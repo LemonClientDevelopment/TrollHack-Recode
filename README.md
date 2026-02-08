@@ -6,7 +6,7 @@
 
 - `src/main/java/dev/mahiro/trollhack/`：当前重构代码（事件系统、入口等）
 - `src/main/resources/`：Fabric 元数据、mixin 配置、access widener
-- `Minecraft源码/`：用于对照与开发的 1.21.11 Yarn 反编译源码（体积较大）
+- `Minecraft源码/`：用于对照与开发的 1.21.11 Yarn 源码
 - `老版本/TrollHack-master/`：旧版 TrollHack 参考实现（架构/模块/配置/GUI 等）
 - `参考项目/Sakura/`：Fabric 客户端参考实现（模块/事件/GUI/配置等）
 
@@ -28,3 +28,6 @@
 
 如果你准备提交到 Git，建议将 `Minecraft源码/` 作为本地参考目录处理（按需加入忽略规则），以避免仓库体积膨胀。
 
+## 上面是AI写的，下面才是我要说的话：
+首先呢，我这个项目只是测试AI的真正能力，我给AI丢了我Sakura外挂的源代码学习，架构基本都跟我的Sakura大差不差吧。。反正这个是开源项目，我尽力维护，嗯对。
+进群QQ交流：1群：1077859841   2群：991876741

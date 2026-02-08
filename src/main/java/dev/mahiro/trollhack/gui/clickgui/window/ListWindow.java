@@ -68,12 +68,16 @@ public final class ListWindow {
     public void render(float mouseX, float mouseY, String searchString) {
         float dragHeight = draggableHeight();
 
+        NanoVGHelper.drawShadow(x, y, width, height, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
         NanoVGHelper.drawRect(x, y, width, height, GuiTheme.BACKGROUND);
         if (GuiTheme.WINDOW_OUTLINE) {
             Color outline = new Color(GuiTheme.PRIMARY.getRed(), GuiTheme.PRIMARY.getGreen(), GuiTheme.PRIMARY.getBlue(), 255);
             NanoVGHelper.drawRectOutline(x, y, width, height, 1.0f, outline);
         }
 
+        if (GuiTheme.TITLE_BAR) {
+            NanoVGHelper.drawRect(x, y, width, dragHeight, GuiTheme.PRIMARY);
+        }
         NanoVGHelper.drawString(title, x + 3.0f, y + 3.0f, FontLoader.bold(), 12.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
         float childY = (height == dragHeight ? 0.0f : dragHeight) + GuiTheme.WINDOW_Y_MARGIN;

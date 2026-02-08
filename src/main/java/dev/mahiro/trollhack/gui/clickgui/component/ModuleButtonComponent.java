@@ -64,6 +64,7 @@ public final class ModuleButtonComponent {
         float h = getHeight();
 
         if (module.isEnabled()) {
+            NanoVGHelper.drawShadow(x, y, width, h, 0.0f, new Color(0, 0, 0, 80), 6.0f, 0.0f, 0.0f);
             NanoVGHelper.drawRect(x, y, width, h, GuiTheme.PRIMARY);
         }
 

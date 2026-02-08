@@ -3,6 +3,7 @@ package dev.mahiro.trollhack.gui.clickgui;
 import dev.mahiro.trollhack.TrollHack;
 import dev.mahiro.trollhack.gui.clickgui.component.ModuleButtonComponent;
 import dev.mahiro.trollhack.gui.clickgui.window.ListWindow;
+import dev.mahiro.trollhack.gui.clickgui.window.ModuleSettingWindow;
 import dev.mahiro.trollhack.module.Category;
 import dev.mahiro.trollhack.module.Module;
 import dev.mahiro.trollhack.nanovg.NanoVGRenderer;
@@ -28,6 +29,7 @@ import static org.lwjgl.nanovg.NanoVG.NVG_ALIGN_MIDDLE;
 
 public final class ClickGuiScreen extends Screen {
     private final LinkedHashMap<Category, ListWindow> windows = new LinkedHashMap<>();
+    private final List<ModuleSettingWindow> moduleSettingWindows = new ArrayList<>();
 
     private String searchString = "";
     private boolean closing;
@@ -98,8 +100,6 @@ public final class ClickGuiScreen extends Screen {
         float trollMouseX = mouseX / GuiTheme.SCALE_FACTOR;
         float trollMouseY = mouseY / GuiTheme.SCALE_FACTOR;
 
-        context.applyBlur();
-
         NanoVGRenderer.INSTANCE.draw(vg -> {
             float trollWidth = width / GuiTheme.SCALE_FACTOR;
             float trollHeight = height / GuiTheme.SCALE_FACTOR;
@@ -116,6 +116,10 @@ public final class ClickGuiScreen extends Screen {
 
             for (ListWindow window : windows.values()) {
                 window.render(trollMouseX, trollMouseY, searchString);
+            }
+
+            for (ModuleSettingWindow window : moduleSettingWindows) {
+                window.render(trollMouseX, trollMouseY);
             }
 
             if (!searchString.isBlank()) {
@@ -141,6 +145,17 @@ public final class ClickGuiScreen extends Screen {
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
+        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
+            ModuleSettingWindow window = moduleSettingWindows.get(i);
+            if (!window.contains(x, y)) continue;
+            window.mouseClicked(x, y, button);
+            moduleSettingWindows.remove(i);
+            if (!window.isCloseRequested()) {
+                moduleSettingWindows.add(window);
+            }
+            return true;
+        }
+
         ListWindow hovered = getHoveredWindow(x, y);
         if (hovered != null) {
             hovered.mouseClicked(x, y, button, searchString);
@@ -160,6 +175,9 @@ public final class ClickGuiScreen extends Screen {
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
+        for (ModuleSettingWindow window : moduleSettingWindows) {
+            window.mouseReleased(x, y, button);
+        }
         for (ListWindow window : windows.values()) {
             window.mouseReleased(x, y, button);
         }
@@ -172,6 +190,9 @@ public final class ClickGuiScreen extends Screen {
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
+        for (ModuleSettingWindow window : moduleSettingWindows) {
+            window.mouseDragged(x, y, button);
+        }
         for (ListWindow window : windows.values()) {
             window.mouseDragged(x, y, button);
         }
@@ -202,6 +223,13 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyInput input) {
+        for (ModuleSettingWindow window : moduleSettingWindows) {
+            if (window.isBindListening()) {
+                window.onKey(input.key());
+                return true;
+            }
+        }
+
         if (input.isEscape() || input.key() == GLFW.GLFW_KEY_RIGHT_SHIFT) {
             requestClose();
             return true;
@@ -243,5 +271,24 @@ public final class ClickGuiScreen extends Screen {
     @Override
     public boolean shouldCloseOnEsc() {
         return false;
+    }
+
+    public void openModuleSettings(Module module, float mouseX, float mouseY) {
+        moduleSettingWindows.removeIf(w -> w.getModule() == module);
+        ModuleSettingWindow window = new ModuleSettingWindow(module);
+
+        float trollWidth = width / GuiTheme.SCALE_FACTOR;
+        float trollHeight = height / GuiTheme.SCALE_FACTOR;
+
+        float x = mouseX + 8.0f;
+        float y = mouseY + 8.0f;
+        if (x + window.getWidth() > trollWidth) x = trollWidth - window.getWidth();
+        if (y + window.getHeight() > trollHeight) y = trollHeight - window.getHeight();
+        if (x < 0.0f) x = 0.0f;
+        if (y < 0.0f) y = 0.0f;
+
+        window.setX(x);
+        window.setY(y);
+        moduleSettingWindows.add(window);
     }
 }

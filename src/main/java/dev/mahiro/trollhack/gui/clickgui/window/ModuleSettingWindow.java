@@ -89,12 +89,16 @@ public final class ModuleSettingWindow {
     }
 
     public void render(float mouseX, float mouseY) {
+        NanoVGHelper.drawShadow(x, y, width, height, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
         NanoVGHelper.drawRect(x, y, width, height, GuiTheme.BACKGROUND);
         if (GuiTheme.WINDOW_OUTLINE) {
             Color outline = new Color(GuiTheme.PRIMARY.getRed(), GuiTheme.PRIMARY.getGreen(), GuiTheme.PRIMARY.getBlue(), 255);
             NanoVGHelper.drawRectOutline(x, y, width, height, 1.0f, outline);
         }
 
+        if (GuiTheme.TITLE_BAR) {
+            NanoVGHelper.drawRect(x, y, width, draggableHeight(), GuiTheme.PRIMARY);
+        }
         int titleFont = FontLoader.bold();
         NanoVGHelper.drawString(module.getName(), x + 3.0f, y + 3.0f, titleFont, 12.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
