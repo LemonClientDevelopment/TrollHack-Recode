@@ -20,13 +20,13 @@ public class TrollHack implements ClientModInitializer {
     public void onInitializeClient() {
         EVENT_BUS.registerLambdaFactory(TrollHack.class.getPackageName(), (lookupInMethod, klass) -> (MethodHandles.Lookup) lookupInMethod.invoke(null, klass, MethodHandles.lookup()));
 
-        Runtime.getRuntime().addShutdownHook(new Thread(ConfigManager::saveFromRuntime, "TrollHack-ConfigSaver"));
+        Runtime.getRuntime().addShutdownHook(new Thread(ConfigManager::saveAll, "TrollHack-ConfigSaver"));
 
         MODULE_MANAGER.register(new ExampleModule());
         MODULE_MANAGER.load();
 
         EVENT_BUS.subscribe(MODULE_MANAGER);
 
-        ConfigManager.loadAndApply();
+        ConfigManager.loadAll();
     }
 }

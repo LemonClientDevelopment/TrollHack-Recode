@@ -67,12 +67,14 @@ public final class ClickGuiScreen extends Screen {
         super.init();
 
         if (windows.isEmpty()) {
-            float posX = 0.0f;
-            float posY = 0.0f;
+            float posX = GuiTheme.WINDOW_X_MARGIN;
+            float posY = GuiTheme.WINDOW_X_MARGIN;
 
             float trollWidth = getTrollWidth();
             float trollHeight = getTrollHeight();
-            float defaultHeight = Math.min(400.0f, trollHeight - 2.0f);
+            float windowWidth = 90.0f;
+            float defaultHeight = Math.min(300.0f, trollHeight - 30.0f);
+            float rowStep = defaultHeight + GuiTheme.WINDOW_Y_MARGIN * 8.0f;
 
             for (Category category : Category.values()) {
                 List<ModuleButtonComponent> children = new ArrayList<>();
@@ -83,15 +85,15 @@ public final class ClickGuiScreen extends Screen {
                 ListWindow window = new ListWindow(this, category, category.getDisplayName(), children);
                 window.setX(posX);
                 window.setY(posY);
-                window.setWidth(80.0f);
+                window.setWidth(windowWidth);
                 window.setHeight(defaultHeight);
                 windows.put(category, window);
                 windowOrder.add(window);
 
-                posX += 80.0f;
-                if (posX > trollWidth) {
-                    posX = 0.0f;
-                    posY += 100.0f;
+                posX += windowWidth + GuiTheme.WINDOW_X_MARGIN * 2.0f;
+                if (posX + windowWidth > trollWidth - GuiTheme.WINDOW_X_MARGIN) {
+                    posX = GuiTheme.WINDOW_X_MARGIN;
+                    posY += rowStep;
                 }
             }
         }

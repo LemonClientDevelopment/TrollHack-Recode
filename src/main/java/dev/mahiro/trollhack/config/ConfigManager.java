@@ -1,125 +1,210 @@
 package dev.mahiro.trollhack.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import dev.mahiro.trollhack.TrollHack;
-import dev.mahiro.trollhack.module.BindMode;
-import dev.mahiro.trollhack.module.Module;
-import dev.mahiro.trollhack.setting.Setting;
-import net.fabricmc.loader.api.FabricLoader;
 
-import java.nio.charset.StandardCharsets;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public final class ConfigManager {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String FILE_NAME = "trollhack.json";
+    private static final Set<IConfig> CONFIGS = new LinkedHashSet<>();
+    private static final String DEFAULT_PRESET = "default";
 
     private ConfigManager() {
     }
 
-    public static void loadAndApply() {
-        Path path = getConfigPath();
-        if (!Files.exists(path)) return;
+    static {
+        register(GenericConfig.INSTANCE);
+        register(GuiConfig.INSTANCE);
+        register(ModuleConfig.INSTANCE);
+    }
 
+    public static void register(IConfig config) {
+        if (config == null) return;
+        CONFIGS.add(config);
+    }
+
+    public static void unregister(IConfig config) {
+        if (config == null) return;
+        CONFIGS.remove(config);
+    }
+
+    public static boolean loadAll() {
+        migrateFromFabricConfigDir();
+        boolean success = load(GenericConfig.INSTANCE);
+        for (IConfig config : CONFIGS) {
+            if (config == GenericConfig.INSTANCE) continue;
+            success = load(config) || success;
+        }
+        return success;
+    }
+
+    public static boolean load(IConfig config) {
         try {
-            String json = Files.readString(path, StandardCharsets.UTF_8);
-            ClientConfig config = GSON.fromJson(json, ClientConfig.class);
-            if (config == null) return;
-            apply(config);
+            config.load();
+            TrollHack.LOGGER.info("{} config loaded", config.getName());
+            return true;
         } catch (Exception e) {
-            TrollHack.LOGGER.error("Failed to load config", e);
+            TrollHack.LOGGER.error("Failed to load {} config", config.getName(), e);
+            return false;
         }
     }
 
-    public static void saveFromRuntime() {
+    public static boolean saveAll() {
+        boolean success = save(GenericConfig.INSTANCE);
+        for (IConfig config : CONFIGS) {
+            if (config == GenericConfig.INSTANCE) continue;
+            success = save(config) || success;
+        }
+        return success;
+    }
+
+    public static boolean save(IConfig config) {
         try {
-            Path path = getConfigPath();
-            Files.createDirectories(path.getParent());
-            ClientConfig config = capture();
-            String json = GSON.toJson(config);
-            Files.writeString(path, json, StandardCharsets.UTF_8);
+            config.save();
+            TrollHack.LOGGER.info("{} config saved", config.getName());
+            return true;
         } catch (Exception e) {
-            TrollHack.LOGGER.error("Failed to save config", e);
+            TrollHack.LOGGER.error("Failed to save {} config", config.getName(), e);
+            return false;
         }
     }
 
-    private static ClientConfig capture() {
-        ClientConfig config = new ClientConfig();
-        for (Module module : TrollHack.MODULE_MANAGER.getModules()) {
-            ModuleConfig moduleConfig = new ModuleConfig();
-            moduleConfig.enabled = module.isEnabled();
-            moduleConfig.visible = module.isVisible();
-            moduleConfig.bindKey = module.getBindKey();
-            moduleConfig.bindMode = module.getBindMode().name();
+    public enum ConfigType {
+        GUI(GuiConfig.INSTANCE, GenericConfig.INSTANCE::getGuiPreset, GenericConfig.INSTANCE::setGuiPreset),
+        MODULES(ModuleConfig.INSTANCE, GenericConfig.INSTANCE::getModulePreset, GenericConfig.INSTANCE::setModulePreset);
 
-            JsonObject settings = new JsonObject();
-            for (Setting<?> setting : module.getSettings()) {
-                if (setting.isTransient()) continue;
-                settings.add(setting.getName(), setting.write());
+        private final IConfig config;
+        private final PresetGetter getter;
+        private final PresetSetter setter;
+
+        ConfigType(IConfig config, PresetGetter getter, PresetSetter setter) {
+            this.config = config;
+            this.getter = getter;
+            this.setter = setter;
+        }
+
+        public String getPreset() {
+            return getter.get();
+        }
+
+        public void setPreset(String preset) {
+            if (!isValidPresetName(preset)) return;
+            save(GenericConfig.INSTANCE);
+            setter.set(preset);
+            save(GenericConfig.INSTANCE);
+            load(config);
+        }
+
+        public void copyPreset(String name) {
+            if (!isValidPresetName(name)) return;
+            if (name.equals(getPreset())) return;
+
+            save(config);
+
+            try {
+                Path from = config.getFile();
+                Path to = from.getParent().resolve(name + ".json");
+                Files.createDirectories(to.getParent());
+                Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception e) {
+                TrollHack.LOGGER.error("Failed to copy preset for {}", config.getName(), e);
             }
-            moduleConfig.settings = settings;
-
-            config.modules.put(module.getName(), moduleConfig);
         }
-        return config;
+
+        public void deletePreset(String name) {
+            if (!isValidPresetName(name)) return;
+            if (!getAllPresets().contains(name)) return;
+
+            try {
+                Path dir = config.getFile().getParent();
+                Files.deleteIfExists(dir.resolve(name + ".json"));
+                Files.deleteIfExists(dir.resolve(name + ".bak"));
+            } catch (Exception e) {
+                TrollHack.LOGGER.error("Failed to delete preset for {}", config.getName(), e);
+            }
+
+            if (name.equals(getPreset())) {
+                setter.set(DEFAULT_PRESET);
+                save(GenericConfig.INSTANCE);
+                load(config);
+            }
+        }
+
+        public Set<String> getAllPresets() {
+            File dir = config.getFile().getParent().toFile();
+            if (!dir.exists() || !dir.isDirectory()) return Set.of();
+            File[] files = dir.listFiles();
+            if (files == null) return Set.of();
+
+            LinkedHashSet<String> result = new LinkedHashSet<>();
+            for (File f : files) {
+                if (!f.isFile()) continue;
+                if (!f.getName().endsWith(".json")) continue;
+                if (f.length() <= 8L) continue;
+                String name = f.getName();
+                result.add(name.substring(0, name.length() - 5));
+            }
+            return result;
+        }
     }
 
-    private static void apply(ClientConfig config) {
-        for (Map.Entry<String, ModuleConfig> entry : config.modules.entrySet()) {
-            String moduleName = entry.getKey();
-            ModuleConfig moduleConfig = entry.getValue();
-            TrollHack.MODULE_MANAGER.getModule(moduleName).ifPresent(module -> applyModule(module, moduleConfig));
+    private static boolean isValidPresetName(String input) {
+        if (input == null) return false;
+        String name = input.trim();
+        if (name.isEmpty()) return false;
+        if (name.endsWith(".json")) name = name.substring(0, name.length() - 5);
+        if (name.isEmpty()) return false;
+
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            boolean ok = (c >= 'a' && c <= 'z')
+                    || (c >= 'A' && c <= 'Z')
+                    || (c >= '0' && c <= '9')
+                    || c == '-' || c == '_' || c == '.';
+            if (!ok) return false;
         }
+        return true;
     }
 
-    private static void applyModule(Module module, ModuleConfig moduleConfig) {
-        if (moduleConfig == null) return;
-
-        module.setVisible(moduleConfig.visible);
-        module.setBindKey(moduleConfig.bindKey);
-
+    private static void migrateFromFabricConfigDir() {
         try {
-            if (moduleConfig.bindMode != null && !moduleConfig.bindMode.isBlank()) {
-                module.setBindMode(BindMode.valueOf(moduleConfig.bindMode.trim().toUpperCase(Locale.ROOT)));
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
+            Path oldBase = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("trollhack").resolve("config");
+            Path newBase = GamePaths.getGameDir().resolve("trollhack").resolve("config");
 
-        if (moduleConfig.settings != null) {
-            for (Setting<?> setting : module.getSettings()) {
-                JsonElement element = moduleConfig.settings.get(setting.getName());
-                if (element != null) {
+            if (!Files.exists(oldBase)) return;
+            if (Files.exists(newBase)) return;
+
+            Files.createDirectories(newBase);
+            try (var stream = Files.walk(oldBase)) {
+                stream.forEach(from -> {
                     try {
-                        setting.read(element);
+                        Path relative = oldBase.relativize(from);
+                        Path to = newBase.resolve(relative);
+                        if (Files.isDirectory(from)) {
+                            Files.createDirectories(to);
+                        } else {
+                            Files.createDirectories(to.getParent());
+                            Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+                        }
                     } catch (Exception ignored) {
                     }
-                }
+                });
             }
+        } catch (Exception ignored) {
         }
-
-        module.setEnabled(moduleConfig.enabled);
     }
 
-    private static Path getConfigPath() {
-        return FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
+    @FunctionalInterface
+    private interface PresetGetter {
+        String get();
     }
 
-    public static final class ClientConfig {
-        public Map<String, ModuleConfig> modules = new LinkedHashMap<>();
-    }
-
-    public static final class ModuleConfig {
-        public boolean enabled;
-        public boolean visible = true;
-        public int bindKey = -1;
-        public String bindMode = BindMode.TOGGLE.name();
-        public JsonObject settings = new JsonObject();
+    @FunctionalInterface
+    private interface PresetSetter {
+        void set(String value);
     }
 }
