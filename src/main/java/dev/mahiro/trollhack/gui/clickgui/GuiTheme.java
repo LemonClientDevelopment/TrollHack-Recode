@@ -9,7 +9,10 @@ public final class GuiTheme {
     public static final Color BACKGROUND = new Color(40, 32, 36, 160);
     public static final Color TEXT = new Color(255, 250, 253, 255);
 
+    public static final float BACKGROUND_BLUR = 0.0f;
     public static final float DARKNESS = 0.25f;
+    public static final float FADE_IN_TIME_SEC = 0.4f;
+    public static final float FADE_OUT_TIME_SEC = 0.4f;
 
     public static final float WINDOW_X_MARGIN = 4.0f;
     public static final float WINDOW_Y_MARGIN = 1.0f;

@@ -6,9 +6,13 @@ import dev.mahiro.trollhack.module.Module;
 import dev.mahiro.trollhack.nanovg.font.FontLoader;
 import dev.mahiro.trollhack.nanovg.util.NanoVGHelper;
 import dev.mahiro.trollhack.setting.*;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.util.List;
 
 import static org.lwjgl.nanovg.NanoVG.*;
@@ -71,7 +75,7 @@ public final class ModuleSettingWindow {
     }
 
     private float draggableHeight() {
-        return 16.0f;
+        return NanoVGHelper.getFontHeight(FontLoader.bold(), 12.0f) + 6.0f;
     }
 
     public boolean isBindListening() {
@@ -118,6 +122,17 @@ public final class ModuleSettingWindow {
             }
         }
 
+        if (isCtrlDown()) {
+            if (keyCode == GLFW.GLFW_KEY_C) {
+                copySettingsToClipboard();
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_V) {
+                pasteSettingsFromClipboard();
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -154,7 +169,7 @@ public final class ModuleSettingWindow {
 
     public void render(float mouseX, float mouseY) {
         float contentHeight = computeContentHeight();
-        height = Math.min(260.0f, contentHeight);
+        height = contentHeight;
 
         NanoVGHelper.drawShadow(x, y, width, height, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
         NanoVGHelper.drawRect(x, y, width, height, GuiTheme.BACKGROUND);
@@ -314,8 +329,6 @@ public final class ModuleSettingWindow {
                 dragging = true;
                 dragOffsetX = localX;
                 dragOffsetY = localY;
-            } else if (button == 1) {
-                closeRequested = true;
             }
             return;
         }
@@ -595,5 +608,39 @@ public final class ModuleSettingWindow {
         COLOR_SAT,
         COLOR_BRI,
         COLOR_ALPHA
+    }
+
+    private static boolean isCtrlDown() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.getWindow() == null) return false;
+        return InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+            || InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    private void copySettingsToClipboard() {
+        try {
+            com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+            for (Setting<?> setting : module.getSettings()) {
+                if (setting.isTransient()) continue;
+                obj.add(setting.getName(), setting.write());
+            }
+            String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(obj);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(json), null);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void pasteSettingsFromClipboard() {
+        try {
+            String text = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+            if (text == null || text.isBlank()) return;
+            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(text).getAsJsonObject();
+            for (Setting<?> setting : module.getSettings()) {
+                if (obj.has(setting.getName())) {
+                    setting.read(obj.get(setting.getName()));
+                }
+            }
+        } catch (Throwable ignored) {
+        }
     }
 }

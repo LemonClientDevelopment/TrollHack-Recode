@@ -1,6 +1,8 @@
 package dev.mahiro.trollhack.gui.clickgui;
 
 import dev.mahiro.trollhack.TrollHack;
+import dev.mahiro.trollhack.gui.clickgui.anim.AnimatedFloat;
+import dev.mahiro.trollhack.gui.clickgui.anim.Easing;
 import dev.mahiro.trollhack.gui.clickgui.component.ModuleButtonComponent;
 import dev.mahiro.trollhack.gui.clickgui.window.ListWindow;
 import dev.mahiro.trollhack.gui.clickgui.window.ModuleSettingWindow;
@@ -30,8 +32,19 @@ import static org.lwjgl.nanovg.NanoVG.NVG_ALIGN_MIDDLE;
 public final class ClickGuiScreen extends Screen {
     private final LinkedHashMap<Category, ListWindow> windows = new LinkedHashMap<>();
     private final List<ModuleSettingWindow> moduleSettingWindows = new ArrayList<>();
+    private final List<Object> windowOrder = new ArrayList<>();
 
     private String searchString = "";
+    private final AnimatedFloat searchWidth = new AnimatedFloat(Easing.OUT_CUBIC, 250.0f, 0.0f);
+    private long searchUpdateTimeMs;
+
+    private MouseState mouseState = MouseState.NONE;
+    private Object lastClicked;
+    private float lastClickX;
+    private float lastClickY;
+    private long lastClickTimeMs;
+    private int lastClickButton = -1;
+
     private boolean closing;
     private long transitionStartMs;
     private float transitionFrom;
@@ -39,6 +52,10 @@ public final class ClickGuiScreen extends Screen {
 
     public ClickGuiScreen() {
         super(Text.literal("TrollHack ClickGUI"));
+    }
+
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
     }
 
     @Override
@@ -63,6 +80,7 @@ public final class ClickGuiScreen extends Screen {
                 window.setWidth(80.0f);
                 window.setHeight(400.0f);
                 windows.put(category, window);
+                windowOrder.add(window);
 
                 posX += 80.0f;
                 if (posX > trollWidth) {
@@ -100,6 +118,20 @@ public final class ClickGuiScreen extends Screen {
         float trollMouseX = mouseX / GuiTheme.SCALE_FACTOR;
         float trollMouseY = mouseY / GuiTheme.SCALE_FACTOR;
 
+        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
+            ModuleSettingWindow window = moduleSettingWindows.get(i);
+            if (lastClicked != window && !window.handlesKeyboardInput()) {
+                closeWindow(window);
+            }
+        }
+
+        if (GuiTheme.BACKGROUND_BLUR > 0.0f) {
+            try {
+                context.applyBlur();
+            } catch (Throwable ignored) {
+            }
+        }
+
         NanoVGRenderer.INSTANCE.draw(vg -> {
             float trollWidth = width / GuiTheme.SCALE_FACTOR;
             float trollHeight = height / GuiTheme.SCALE_FACTOR;
@@ -114,22 +146,15 @@ public final class ClickGuiScreen extends Screen {
 
             NanoVGHelper.translate(vg, 0.0f, -(trollHeight * (1.0f - multiplier)));
 
-            for (ListWindow window : windows.values()) {
-                window.render(trollMouseX, trollMouseY, searchString);
+            for (Object window : windowOrder) {
+                if (window instanceof ListWindow listWindow) {
+                    listWindow.render(trollMouseX, trollMouseY, searchString);
+                } else if (window instanceof ModuleSettingWindow settingWindow) {
+                    settingWindow.render(trollMouseX, trollMouseY);
+                }
             }
 
-            for (ModuleSettingWindow window : moduleSettingWindows) {
-                window.render(trollMouseX, trollMouseY);
-            }
-
-            if (!searchString.isBlank()) {
-                int font = FontLoader.medium();
-                float size = 16.0f;
-                float textWidth = NanoVGHelper.getTextWidth(searchString, font, size);
-                float x = trollWidth / 2.0f - textWidth / 2.0f;
-                float y = trollHeight / 2.0f;
-                NanoVGHelper.drawString(searchString, x, y, font, size, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, GuiTheme.TEXT);
-            }
+            drawSearchString(trollWidth, trollHeight);
 
             NanoVGHelper.restore();
         });
@@ -139,34 +164,54 @@ public final class ClickGuiScreen extends Screen {
         }
     }
 
+    private void drawSearchString(float trollWidth, float trollHeight) {
+        if (searchString.isBlank()) return;
+        long now = System.currentTimeMillis();
+        if (now - searchUpdateTimeMs > 5000L) return;
+
+        int font = FontLoader.medium();
+        float size = 16.0f;
+        float w = searchWidth.get();
+        float x = trollWidth / 2.0f - w / 2.0f;
+        float y = trollHeight / 2.0f;
+
+        float t = (now - searchUpdateTimeMs) / 5000.0f;
+        int alpha = (int) (255.0f * (1.0f - Easing.IN_CUBIC.apply(Easing.clamp01(t))));
+        Color color = new Color(GuiTheme.TEXT.getRed(), GuiTheme.TEXT.getGreen(), GuiTheme.TEXT.getBlue(), alpha);
+        NanoVGHelper.drawString(searchString, x, y, font, size, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, color);
+    }
+
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
         float x = (float) (click.x() / GuiTheme.SCALE_FACTOR);
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
-        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
-            ModuleSettingWindow window = moduleSettingWindows.get(i);
-            if (!window.contains(x, y)) continue;
+        mouseState = MouseState.CLICK;
+        lastClickX = x;
+        lastClickY = y;
+        lastClickTimeMs = System.currentTimeMillis();
+        lastClickButton = button;
+
+        Object hovered = getHoveredWindow(x, y);
+        lastClicked = hovered;
+        if (hovered == null) return false;
+
+        float trollWidth = width / GuiTheme.SCALE_FACTOR;
+        float trollHeight = height / GuiTheme.SCALE_FACTOR;
+
+        if (hovered instanceof ModuleSettingWindow window) {
             window.mouseClicked(x, y, button);
-            moduleSettingWindows.remove(i);
-            if (!window.isCloseRequested()) {
-                moduleSettingWindows.add(window);
+            if (window.isCloseRequested()) {
+                closeWindow(window);
+                return true;
             }
-            return true;
+        } else if (hovered instanceof ListWindow window) {
+            window.onClick(x, y, button, trollWidth, trollHeight);
         }
 
-        ListWindow hovered = getHoveredWindow(x, y);
-        if (hovered != null) {
-            hovered.mouseClicked(x, y, button, searchString);
-
-            Category category = hovered.getCategory();
-            windows.remove(category);
-            windows.put(category, hovered);
-            return true;
-        }
-
-        return false;
+        bringToFront(hovered);
+        return true;
     }
 
     @Override
@@ -175,12 +220,17 @@ public final class ClickGuiScreen extends Screen {
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
-        for (ModuleSettingWindow window : moduleSettingWindows) {
+        float trollHeight = height / GuiTheme.SCALE_FACTOR;
+        boolean wasDrag = mouseState == MouseState.DRAG;
+
+        if (lastClicked instanceof ModuleSettingWindow window) {
             window.mouseReleased(x, y, button);
+            if (window.isCloseRequested()) closeWindow(window);
+        } else if (lastClicked instanceof ListWindow window) {
+            window.onRelease(x, y, button, trollHeight, wasDrag);
         }
-        for (ListWindow window : windows.values()) {
-            window.mouseReleased(x, y, button);
-        }
+
+        mouseState = MouseState.NONE;
         return true;
     }
 
@@ -190,11 +240,22 @@ public final class ClickGuiScreen extends Screen {
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
-        for (ModuleSettingWindow window : moduleSettingWindows) {
-            window.mouseDragged(x, y, button);
+        long now = System.currentTimeMillis();
+        float dx = x - lastClickX;
+        float dy = y - lastClickY;
+        float dist2 = dx * dx + dy * dy;
+        if (mouseState != MouseState.DRAG) {
+            if (dist2 < 16.0f || now - lastClickTimeMs < 50L) return true;
+            mouseState = MouseState.DRAG;
         }
-        for (ListWindow window : windows.values()) {
+
+        float trollWidth = width / GuiTheme.SCALE_FACTOR;
+        float trollHeight = height / GuiTheme.SCALE_FACTOR;
+
+        if (lastClicked instanceof ModuleSettingWindow window) {
             window.mouseDragged(x, y, button);
+        } else if (lastClicked instanceof ListWindow window) {
+            window.onDrag(x, y, button, trollWidth, trollHeight);
         }
         return true;
     }
@@ -204,26 +265,25 @@ public final class ClickGuiScreen extends Screen {
         float x = (float) (mouseX / GuiTheme.SCALE_FACTOR);
         float y = (float) (mouseY / GuiTheme.SCALE_FACTOR);
 
-        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
-            ModuleSettingWindow window = moduleSettingWindows.get(i);
-            if (window.mouseScrolled(x, y, verticalAmount)) {
-                return true;
-            }
+        Object hovered = getHoveredWindow(x, y);
+        if (hovered instanceof ModuleSettingWindow window) {
+            return window.mouseScrolled(x, y, verticalAmount);
         }
-
-        ListWindow hovered = getHoveredWindow(x, y);
-        if (hovered != null) {
-            hovered.mouseScrolled(x, y, verticalAmount, searchString);
+        if (hovered instanceof ListWindow window) {
+            window.onMouseWheel(verticalAmount);
             return true;
         }
         return false;
     }
 
-    private ListWindow getHoveredWindow(float mouseX, float mouseY) {
-        ListWindow result = null;
-        for (ListWindow window : windows.values()) {
-            if (window.contains(mouseX, mouseY)) {
-                result = window;
+    private Object getHoveredWindow(float mouseX, float mouseY) {
+        if (mouseState != MouseState.NONE) return lastClicked;
+        Object result = null;
+        for (Object window : windowOrder) {
+            if (window instanceof ListWindow listWindow) {
+                if (listWindow.contains(mouseX, mouseY)) result = window;
+            } else if (window instanceof ModuleSettingWindow settingWindow) {
+                if (settingWindow.contains(mouseX, mouseY)) result = window;
             }
         }
         return result;
@@ -231,20 +291,21 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyInput input) {
-        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
-            ModuleSettingWindow window = moduleSettingWindows.get(i);
-            if (window.handlesKeyboardInput() && window.onKey(input.key())) {
-                return true;
-            }
+        if (lastClicked instanceof ModuleSettingWindow window) {
+            if (window.handlesKeyboardInput() && window.onKey(input.key())) return true;
         }
 
         if (input.isEscape() || input.key() == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-            requestClose();
+            if (searchString.isBlank() && !isKeyboardInputActive()) {
+                requestClose();
+                return true;
+            }
             return true;
         }
 
         if (input.key() == GLFW.GLFW_KEY_BACKSPACE || input.key() == GLFW.GLFW_KEY_DELETE) {
             searchString = "";
+            searchWidth.forceUpdate(0.0f);
             return true;
         }
 
@@ -253,20 +314,26 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean charTyped(CharInput input) {
-        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
-            ModuleSettingWindow window = moduleSettingWindows.get(i);
-            if (window.handlesKeyboardInput() && window.onChar(input.codepoint())) {
-                return true;
-            }
+        if (lastClicked instanceof ModuleSettingWindow window) {
+            if (window.handlesKeyboardInput() && window.onChar(input.codepoint())) return true;
         }
 
         char chr = (char) input.codepoint();
         if (Character.isLetter(chr) || chr == ' ') {
-            searchString += chr;
-            applySearchFilter();
+            setSearchString(searchString + chr);
             return true;
         }
         return super.charTyped(input);
+    }
+
+    private void setSearchString(String value) {
+        searchString = value == null ? "" : value;
+        int font = FontLoader.medium();
+        float size = 16.0f;
+        float w = NanoVGHelper.getTextWidth(searchString, font, size);
+        searchWidth.update(w);
+        searchUpdateTimeMs = System.currentTimeMillis();
+        applySearchFilter();
     }
 
     private void applySearchFilter() {
@@ -295,15 +362,38 @@ public final class ClickGuiScreen extends Screen {
         float trollWidth = width / GuiTheme.SCALE_FACTOR;
         float trollHeight = height / GuiTheme.SCALE_FACTOR;
 
-        float x = mouseX + 8.0f;
-        float y = mouseY + 8.0f;
-        if (x + window.getWidth() > trollWidth) x = trollWidth - window.getWidth();
-        if (y + window.getHeight() > trollHeight) y = trollHeight - window.getHeight();
-        if (x < 0.0f) x = 0.0f;
-        if (y < 0.0f) y = 0.0f;
+        float x = (mouseX + window.getWidth() <= trollWidth) ? mouseX : mouseX - window.getWidth();
+        float y = Math.min(mouseY, trollHeight - window.getHeight());
 
         window.setX(x);
         window.setY(y);
         moduleSettingWindows.add(window);
+        windowOrder.add(window);
+        bringToFront(window);
+    }
+
+    private void bringToFront(Object window) {
+        windowOrder.remove(window);
+        windowOrder.add(window);
+    }
+
+    private void closeWindow(Object window) {
+        windowOrder.remove(window);
+        if (window instanceof ModuleSettingWindow settingWindow) {
+            moduleSettingWindows.remove(settingWindow);
+        }
+    }
+
+    private boolean isKeyboardInputActive() {
+        if (lastClicked instanceof ModuleSettingWindow window) {
+            return window.handlesKeyboardInput();
+        }
+        return false;
+    }
+
+    private enum MouseState {
+        NONE,
+        CLICK,
+        DRAG
     }
 }
