@@ -31,7 +31,7 @@ public final class ModuleConfig extends AbstractConfig {
     @Override
     protected JsonObject write() {
         JsonObject root = new JsonObject();
-        for (Module module : TrollHack.MODULE_MANAGER.getModules()) {
+        for (Module module : TrollHack.MODULES.getModules()) {
             JsonObject moduleObj = new JsonObject();
             moduleObj.addProperty("enabled", module.isEnabled());
             moduleObj.addProperty("visible", module.isVisible());
@@ -57,7 +57,7 @@ public final class ModuleConfig extends AbstractConfig {
         for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
             if (!(entry.getValue() instanceof JsonObject moduleObj)) continue;
             String moduleName = entry.getKey();
-            TrollHack.MODULE_MANAGER.getModule(moduleName).ifPresent(module -> applyModule(module, moduleObj));
+            TrollHack.MODULES.getModule(moduleName).ifPresent(module -> applyModule(module, moduleObj));
         }
     }
 

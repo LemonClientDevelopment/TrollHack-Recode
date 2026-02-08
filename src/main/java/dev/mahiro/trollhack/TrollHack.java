@@ -5,6 +5,7 @@ import dev.mahiro.trollhack.event.EventBus;
 import dev.mahiro.trollhack.event.IEventBus;
 import dev.mahiro.trollhack.module.ModuleManager;
 import dev.mahiro.trollhack.module.modules.client.ExampleModule;
+import dev.mahiro.trollhack.module.modules.client.GuiSettingModule;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,7 @@ import java.lang.invoke.MethodHandles;
 public class TrollHack implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("TrollHack");
     public static final IEventBus EVENT_BUS = new EventBus();
-    public static final ModuleManager MODULE_MANAGER = new ModuleManager();
+    public static final ModuleManager MODULES = new ModuleManager();
 
     @Override
     public void onInitializeClient() {
@@ -22,10 +23,11 @@ public class TrollHack implements ClientModInitializer {
 
         Runtime.getRuntime().addShutdownHook(new Thread(ConfigManager::saveAll, "TrollHack-ConfigSaver"));
 
-        MODULE_MANAGER.register(new ExampleModule());
-        MODULE_MANAGER.load();
+        MODULES.register(GuiSettingModule.INSTANCE);
+        MODULES.register(new ExampleModule());
+        MODULES.load();
 
-        EVENT_BUS.subscribe(MODULE_MANAGER);
+        EVENT_BUS.subscribe(MODULES);
 
         ConfigManager.loadAll();
     }

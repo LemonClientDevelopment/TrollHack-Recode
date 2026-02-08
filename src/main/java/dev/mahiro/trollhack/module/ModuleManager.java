@@ -95,14 +95,13 @@ public final class ModuleManager {
         Class<?> clazz = module.getClass();
         while (clazz != null && clazz != Module.class) {
             for (Field field : clazz.getDeclaredFields()) {
-                if (!Setting.class.isAssignableFrom(field.getType())) continue;
                 try {
                     field.setAccessible(true);
-                    Setting<?> setting = (Setting<?>) field.get(module);
-                    if (setting != null) {
+                    Object obj = field.get(module);
+                    if (obj instanceof Setting<?> setting) {
                         module.addSetting(setting);
                     }
-                } catch (Throwable ignored) {
+                } catch (IllegalAccessException ignored) {
                 }
             }
             clazz = clazz.getSuperclass();

@@ -67,18 +67,16 @@ public final class ClickGuiScreen extends Screen {
         super.init();
 
         if (windows.isEmpty()) {
-            float posX = GuiTheme.WINDOW_X_MARGIN;
-            float posY = GuiTheme.WINDOW_X_MARGIN;
+            float posX = 0.0f;
+            float posY = 0.0f;
 
             float trollWidth = getTrollWidth();
-            float trollHeight = getTrollHeight();
-            float windowWidth = 90.0f;
-            float defaultHeight = Math.min(300.0f, trollHeight - 30.0f);
-            float rowStep = defaultHeight + GuiTheme.WINDOW_Y_MARGIN * 8.0f;
+            float windowWidth = 80.0f;
+            float defaultHeight = 400.0f;
 
             for (Category category : Category.values()) {
                 List<ModuleButtonComponent> children = new ArrayList<>();
-                for (Module module : TrollHack.MODULE_MANAGER.getModules(category)) {
+                for (Module module : TrollHack.MODULES.getModules(category)) {
                     children.add(new ModuleButtonComponent(module));
                 }
 
@@ -90,10 +88,10 @@ public final class ClickGuiScreen extends Screen {
                 windows.put(category, window);
                 windowOrder.add(window);
 
-                posX += windowWidth + GuiTheme.WINDOW_X_MARGIN * 2.0f;
-                if (posX + windowWidth > trollWidth - GuiTheme.WINDOW_X_MARGIN) {
-                    posX = GuiTheme.WINDOW_X_MARGIN;
-                    posY += rowStep;
+                posX += windowWidth;
+                if (posX > trollWidth) {
+                    posX = 0.0f;
+                    posY += 100.0f;
                 }
             }
         }
@@ -233,7 +231,11 @@ public final class ClickGuiScreen extends Screen {
             window.onClick(x, y, button, trollWidth, trollHeight);
         }
 
-        bringToFront(hovered);
+        if (lastClicked != null) {
+            bringToFront(lastClicked);
+        } else {
+            bringToFront(hovered);
+        }
         return true;
     }
 
