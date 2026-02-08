@@ -3,6 +3,7 @@ package dev.mahiro.trollhack.module;
 import dev.mahiro.trollhack.TrollHack;
 import dev.mahiro.trollhack.event.events.ModuleToggleEvent;
 import dev.mahiro.trollhack.setting.Setting;
+import net.minecraft.client.MinecraftClient;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +23,8 @@ public abstract class Module {
     private BindMode bindMode = BindMode.TOGGLE;
 
     private final List<Setting<?>> settings = new ArrayList<>();
+
+    protected final MinecraftClient mc = MinecraftClient.getInstance();
 
     protected Module(String name, String description, Category category, boolean enabledByDefault) {
         this.name = Objects.requireNonNull(name, "name");

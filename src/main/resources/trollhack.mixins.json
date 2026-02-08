@@ -4,10 +4,10 @@
   "package": "dev.mahiro.trollhack.mixins",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "client.MixinMinecraftClient",
     "input.MixinKeyboard",
     "input.MixinMouse",
     "render.MixinGameRenderer",
-    "client.MixinMinecraftClient",
     "render.MixinScreen"
   ],
   "injectors": {
@@ -17,6 +17,7 @@
     "requireAnnotations": true
   },
   "client": [
-    "MixinMain"
+    "MixinMain",
+    "MixinWindow"
   ]
 }

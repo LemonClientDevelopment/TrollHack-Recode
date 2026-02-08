@@ -12,10 +12,6 @@ public final class FontLoader {
         return FontManager.fontWithCjkFallback("LexendDeca-Regular.ttf");
     }
 
-    public static int medium() {
-        return FontManager.fontWithCjkFallback("LexendDeca-Regular.ttf");
-    }
-
     public static int cjk() {
         return FontManager.font("kuriyama.ttf");
     }

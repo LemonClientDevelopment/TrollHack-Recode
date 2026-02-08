@@ -4,8 +4,10 @@
   "version": "${version}",
   "name": "TrollHack-Recode",
   "description": "",
-  "authors": [],
-  "contact": {},
+  "authors": [
+    "Fin_LemonKe",
+    "Luna5ama"
+  ],
   "license": "All-Rights-Reserved",
   "environment": "client",
   "entrypoints": {

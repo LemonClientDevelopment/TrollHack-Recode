@@ -1,7 +1,7 @@
 package dev.mahiro.trollhack.config;
 
-import net.minecraft.client.MinecraftClient;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
 
 import java.nio.file.Path;
 

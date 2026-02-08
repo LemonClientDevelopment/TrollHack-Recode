@@ -16,6 +16,8 @@ import org.lwjgl.glfw.GLFW;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import static org.lwjgl.nanovg.NanoVG.*;
@@ -28,7 +30,12 @@ public final class ModuleSettingWindow {
     private float y;
     private float width;
     private float height;
-    private float scroll;
+    private final AnimatedFloat openProgress;
+
+    private long lastScrollSpeedUpdateMs = System.currentTimeMillis();
+    private long lastScrollBounceMs = System.currentTimeMillis();
+    private float scrollSpeed;
+    private float scrollProgress;
 
     private boolean dragging;
     private float dragOffsetX;
@@ -57,6 +64,8 @@ public final class ModuleSettingWindow {
         this.module = module;
         this.width = 180.0f;
         this.height = 120.0f;
+        this.openProgress = new AnimatedFloat(Easing.OUT_QUART, 300.0f, 0.0f);
+        this.openProgress.update(1.0f);
 
         this.lastBindMode = module.getBindMode();
         this.bindModeProgress = new AnimatedFloat(Easing.OUT_QUART, 250.0f, bindModeNormalized(lastBindMode));
@@ -99,11 +108,19 @@ public final class ModuleSettingWindow {
     }
 
     public boolean contains(float mouseX, float mouseY) {
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+        float h = getRenderHeight();
+        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + h;
     }
 
     private float draggableHeight() {
         return NanoVGHelper.getFontHeight(FontLoader.bold(), 11.0f) + 6.0f;
+    }
+
+    private float getRenderHeight() {
+        float dragHeight = draggableHeight();
+        float targetHeight = Math.max(dragHeight, height);
+        float p = openProgress.get();
+        return (targetHeight - dragHeight) * p + dragHeight;
     }
 
     public boolean isBindListening() {
@@ -202,13 +219,15 @@ public final class ModuleSettingWindow {
 
         float contentHeight = computeContentHeight();
         height = Math.min(contentHeight, screen.getTrollHeight() - 2.0f);
+        updateScrollProgress();
+        float renderHeight = getRenderHeight();
 
-        NanoVGHelper.drawShadow(x, y, width, height, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
-        screen.drawWindowBlur(x, y, width, height, GuiTheme.WINDOW_BLUR_PASS > 0 ? 1.0f : 0.0f);
-        NanoVGHelper.drawRect(x, y, width, height, GuiTheme.BACKGROUND);
+        NanoVGHelper.drawShadow(x, y, width, renderHeight, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
+        screen.drawWindowBlur(x, y, width, renderHeight, GuiTheme.WINDOW_BLUR_PASS > 0 ? 1.0f : 0.0f);
+        NanoVGHelper.drawRect(x, y, width, renderHeight, GuiTheme.BACKGROUND);
         if (GuiTheme.WINDOW_OUTLINE) {
             Color outline = new Color(GuiTheme.PRIMARY.getRed(), GuiTheme.PRIMARY.getGreen(), GuiTheme.PRIMARY.getBlue(), 255);
-            NanoVGHelper.drawRectOutline(x, y, width, height, 1.0f, outline);
+            NanoVGHelper.drawRectOutline(x, y, width, renderHeight, 1.0f, outline);
         }
 
         if (GuiTheme.TITLE_BAR) {
@@ -217,14 +236,17 @@ public final class ModuleSettingWindow {
         int titleFont = FontLoader.bold();
         NanoVGHelper.drawString(module.getName(), x + 3.0f, y + 3.5f, titleFont, 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
+        if (openProgress.get() <= 0.0f) return;
+
         float rowX = x + 4.0f;
         float rowW = width - 8.0f;
-        float rowY = y + draggableHeight() + 4.0f - scroll;
+        float rowY = y + draggableHeight() + 4.0f - scrollProgress;
 
+        float reveal = openProgress.get();
         float scissorX = x;
         float scissorY = y + draggableHeight();
-        float scissorW = width;
-        float scissorH = height - draggableHeight();
+        float scissorW = width * reveal;
+        float scissorH = renderHeight - draggableHeight();
         NanoVGHelper.save();
         NanoVGHelper.scissor(scissorX, scissorY, scissorW, scissorH);
 
@@ -292,7 +314,7 @@ public final class ModuleSettingWindow {
             float barW = rowW * (float) t;
 
             NanoVGHelper.drawRect(rowX, rowY, barW, rowH, GuiTheme.PRIMARY);
-            String value = editingSetting == setting ? editingBuffer : stripTrailingZeros(v);
+            String value = editingSetting == setting ? editingBuffer : formatNumberSettingValue(numberSetting, v);
             drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, setting.getName(), value, editingSetting == setting);
             return rowY + rowH + rowGap;
         }
@@ -368,7 +390,7 @@ public final class ModuleSettingWindow {
         float rowX = x + 4.0f;
         float rowW = width - 8.0f;
         float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f) + 3.0f;
-        float rowY = y + draggableHeight() + 4.0f - scroll;
+        float rowY = y + draggableHeight() + 4.0f - scrollProgress;
         float rowGap = 2.0f;
 
         editingSetting = null;
@@ -544,10 +566,8 @@ public final class ModuleSettingWindow {
 
     public boolean mouseScrolled(float mouseX, float mouseY, double amount) {
         if (!contains(mouseX, mouseY)) return false;
-        float maxScroll = Math.max(0.0f, computeContentHeight() - height);
-        scroll -= (float) (amount * 12.0f);
-        if (scroll < 0.0f) scroll = 0.0f;
-        if (scroll > maxScroll) scroll = maxScroll;
+        scrollSpeed -= (float) (amount * 24.0f);
+        lastScrollBounceMs = System.currentTimeMillis();
         return true;
     }
 
@@ -630,6 +650,55 @@ public final class ModuleSettingWindow {
         while (s.endsWith("0")) s = s.substring(0, s.length() - 1);
         if (s.endsWith(".")) s = s.substring(0, s.length() - 1);
         return s;
+    }
+
+    private void updateScrollProgress() {
+        long now = System.currentTimeMillis();
+        float maxScrollProgress = getMaxScrollProgress();
+        if (maxScrollProgress <= 0.0f) {
+            scrollSpeed = 0.0f;
+            scrollProgress = 0.0f;
+            lastScrollSpeedUpdateMs = now;
+            lastScrollBounceMs = now;
+            return;
+        }
+        double x = (now - lastScrollSpeedUpdateMs) / 100.0;
+        double lnHalf = Math.log(0.25);
+        float newSpeed = (float) (scrollSpeed * Math.pow(0.25, x));
+        scrollProgress += (float) ((newSpeed / lnHalf) - (scrollSpeed / lnHalf));
+        scrollSpeed = newSpeed;
+        lastScrollSpeedUpdateMs = now;
+
+        if (now - lastScrollBounceMs >= 100L) {
+            if (scrollProgress < 0.0f) {
+                scrollSpeed = scrollProgress * -0.4f;
+                lastScrollBounceMs = now;
+            } else if (scrollProgress > maxScrollProgress) {
+                scrollSpeed = (scrollProgress - maxScrollProgress) * -0.4f;
+                lastScrollBounceMs = now;
+            }
+        }
+    }
+
+    private float getMaxScrollProgress() {
+        return Math.max(0.0f, computeContentHeight() - height);
+    }
+
+    private static String formatNumberSettingValue(NumberSetting<?> setting, double value) {
+        if (setting instanceof IntSetting) {
+            return String.valueOf((int) Math.round(value));
+        }
+        int places = decimalPlaces(setting.getStep());
+        if (places < 0) places = 0;
+        if (places > 6) places = 6;
+        BigDecimal bd = BigDecimal.valueOf(value).setScale(places, RoundingMode.HALF_UP).stripTrailingZeros();
+        return bd.toPlainString();
+    }
+
+    private static int decimalPlaces(double step) {
+        if (step <= 0.0) return 6;
+        BigDecimal bd = BigDecimal.valueOf(step).stripTrailingZeros();
+        return Math.max(0, bd.scale());
     }
 
     private enum DragTarget {

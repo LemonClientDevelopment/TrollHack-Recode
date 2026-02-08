@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Keyboard.class)
 public final class MixinKeyboard {
     @Inject(method = "onKey", at = @At("TAIL"))
-    private void trollhack$postKeyActionEvent(long window, int action, KeyInput input, CallbackInfo ci) {
+    private void hookOnKey(long window, int action, KeyInput input, CallbackInfo ci) {
         if (action != InputUtil.GLFW_PRESS && action != InputUtil.GLFW_RELEASE) return;
         TrollHack.EVENT_BUS.post(new KeyActionEvent(input.key(), input.scancode(), input.modifiers(), action == InputUtil.GLFW_PRESS));
     }

@@ -131,9 +131,8 @@ public final class ColorPickerWindow {
         float sat = satAnim.get();
         float bright = brightAnim.get();
         Color hueColor = Color.getHSBColor(hue, 1.0f, 1.0f);
-        NanoVGHelper.drawGradientRect3(fieldX0, fieldY0, fieldH, fieldH, Color.WHITE, Color.BLACK, hueColor, Color.BLACK);
-        NanoVGHelper.drawGradientRect3(fieldX0, fieldY0, fieldH, fieldH, Color.WHITE, new Color(255, 255, 255, 0), hueColor, new Color(hueColor.getRed(), hueColor.getGreen(), hueColor.getBlue(), 0));
-        NanoVGHelper.drawGradientRect3(fieldX0, fieldY0, fieldH, fieldH, new Color(0, 0, 0, 0), Color.BLACK, new Color(0, 0, 0, 0), Color.BLACK);
+        NanoVGHelper.drawGradientRRect2(fieldX0, fieldY0, fieldH, fieldH, 0.0f, Color.WHITE, hueColor);
+        NanoVGHelper.drawGradientRRect(fieldX0, fieldY0, fieldH, fieldH, 0.0f, new Color(0, 0, 0, 0), new Color(0, 0, 0, 255));
         NanoVGHelper.drawRectOutline(fieldX0, fieldY0, fieldH, fieldH, 1.0f, new Color(0, 0, 0, 140));
 
         float circleX = fieldX0 + fieldH * sat;

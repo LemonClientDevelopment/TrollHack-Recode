@@ -34,9 +34,6 @@ dependencies {
     def lwjglVersion = "3.3.3"
     implementation include("org.lwjgl:lwjgl-nanovg:${lwjglVersion}")
     runtimeOnly include("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows")
-
-    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 processResources {
@@ -50,10 +47,6 @@ processResources {
         expand "version": project.version,
                 "minecraft_version": project.minecraft_version,
                 "loader_version": project.loader_version
-    }
-
-    from("老版本/TrollHack-master/src/main/resources") {
-        include "assets/trollhack/fonts/**"
     }
 }
 

@@ -181,25 +181,25 @@ public final class ListWindow {
             float centerSplitterV = (float) Math.min(10.0, preDragHeight / 3.0);
 
             resizeH = localX >= -2.0f && localX <= centerSplitterH
-                ? HAlign.LEFT
-                : localX >= centerSplitterH && localX <= preDragWidth - centerSplitterH
+                    ? HAlign.LEFT
+                    : localX >= centerSplitterH && localX <= preDragWidth - centerSplitterH
                     ? HAlign.CENTER
                     : localX >= preDragWidth - centerSplitterH && localX <= preDragWidth + 2.0f
-                        ? HAlign.RIGHT
-                        : null;
+                    ? HAlign.RIGHT
+                    : null;
 
             float centerSplitterVCenter =
-                (draggableHeight() != height && resizeH == HAlign.CENTER)
-                    ? 2.5f
-                    : (float) Math.min(15.0, preDragWidth / 3.0);
+                    (draggableHeight() != height && resizeH == HAlign.CENTER)
+                            ? 2.5f
+                            : (float) Math.min(15.0, preDragWidth / 3.0);
 
             resizeV = localY >= -2.0f && localY <= centerSplitterVCenter
-                ? VAlign.TOP
-                : localY >= centerSplitterVCenter && localY <= preDragHeight - centerSplitterV
+                    ? VAlign.TOP
+                    : localY >= centerSplitterVCenter && localY <= preDragHeight - centerSplitterV
                     ? VAlign.CENTER
                     : localY >= preDragHeight - centerSplitterV && localY <= preDragHeight + 2.0f
-                        ? VAlign.BOTTOM
-                        : null;
+                    ? VAlign.BOTTOM
+                    : null;
 
             if (resizeH != null && resizeV != null) {
                 if (!minimized && (resizeH != HAlign.CENTER || resizeV != VAlign.CENTER)) {

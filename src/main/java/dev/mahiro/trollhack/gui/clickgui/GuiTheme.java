@@ -6,7 +6,6 @@ public final class GuiTheme {
     public static int SCALE_PERCENT = 100;
     private static float prevScale = 1.0f;
     private static float scale = 1.0f;
-    private static float targetScale = 1.0f;
     private static long lastScaleChangeMs = System.currentTimeMillis();
     private static long lastScaleTickMs = System.currentTimeMillis();
 
@@ -30,29 +29,33 @@ public final class GuiTheme {
     public static int HOVER_ALPHA = 32;
 
     public static void setScalePercent(int scalePercent) {
-        SCALE_PERCENT = clampInt(scalePercent, 50, 400);
-        long now = System.currentTimeMillis();
-        lastScaleChangeMs = now;
-        targetScale = SCALE_PERCENT / 100.0f;
+        int clamped = clampInt(scalePercent, 50, 400);
+        if (clamped == SCALE_PERCENT) {
+            return;
+        }
+        SCALE_PERCENT = clamped;
+        lastScaleChangeMs = System.currentTimeMillis();
     }
 
     public static void tick() {
         prevScale = scale;
-
         long now = System.currentTimeMillis();
         float dt = (now - lastScaleTickMs) / 1000.0f;
         lastScaleTickMs = now;
-        if (dt <= 0.0f) return;
+        if (dt <= 0.0f) {
+            return;
+        }
+        if (now - lastScaleChangeMs < 500L) {
+            return;
+        }
 
-        float rawTarget = SCALE_PERCENT / 100.0f;
-        float snappedTarget = (now - lastScaleChangeMs > 200L) ? getRoundedScale(rawTarget) : rawTarget;
-        targetScale = snappedTarget;
-
-        float smoothing = 18.0f;
-        float t = 1.0f - (float) Math.exp(-smoothing * dt);
-        scale = scale + (targetScale - scale) * t;
-        if (Math.abs(targetScale - scale) < 0.0001f) {
-            scale = targetScale;
+        float target = getRoundedScale();
+        float diff = target - scale;
+        float maxDelta = 0.05f * dt;
+        if (Math.abs(diff) <= maxDelta) {
+            scale = target;
+        } else {
+            scale += Math.signum(diff) * maxDelta;
         }
     }
 
@@ -74,7 +77,8 @@ public final class GuiTheme {
         return withAlpha(getIdleOverlay(), clampInt(HOVER_ALPHA * 2, 0, 255));
     }
 
-    private static float getRoundedScale(float raw) {
+    private static float getRoundedScale() {
+        float raw = SCALE_PERCENT / 100.0f;
         return Math.round(raw / 0.1f) * 0.1f;
     }
 

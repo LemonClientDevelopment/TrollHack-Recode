@@ -1,11 +1,15 @@
 package dev.mahiro.trollhack.module;
 
+import dev.mahiro.trollhack.TrollHack;
 import dev.mahiro.trollhack.event.EventHandler;
 import dev.mahiro.trollhack.event.EventType;
 import dev.mahiro.trollhack.event.events.client.TickEvent;
 import dev.mahiro.trollhack.event.events.input.KeyActionEvent;
 import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
 import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
+import dev.mahiro.trollhack.module.modules.client.ExampleModule;
+import dev.mahiro.trollhack.module.modules.client.GuiSetting;
+import dev.mahiro.trollhack.module.modules.movement.AutoSprint;
 import dev.mahiro.trollhack.setting.Setting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
@@ -20,6 +24,16 @@ public final class ModuleManager {
     private boolean loaded;
 
     public ModuleManager() {
+        TrollHack.EVENT_BUS.subscribe(this);
+
+        // Client
+        register(new ExampleModule());
+        register(new GuiSetting());
+
+        // Movement
+        register(new AutoSprint());
+
+        load();
     }
 
     public boolean isLoaded() {

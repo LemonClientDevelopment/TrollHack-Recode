@@ -277,11 +277,11 @@ final class FramebufferBlur {
             uniform vec2 uTexelSize;
             uniform vec2 uDirection;
             uniform float uRadius;
-
+            
             float weight(float x, float sigma) {
               return exp(-(x * x) / (2.0 * sigma * sigma));
             }
-
+            
             void main() {
               float sigma = max(uRadius, 0.5);
               vec4 color = vec4(0.0);

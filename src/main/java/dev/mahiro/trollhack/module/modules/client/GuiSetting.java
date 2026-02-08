@@ -3,13 +3,14 @@ package dev.mahiro.trollhack.module.modules.client;
 import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
 import dev.mahiro.trollhack.module.Category;
 import dev.mahiro.trollhack.module.Module;
-import dev.mahiro.trollhack.setting.*;
+import dev.mahiro.trollhack.setting.BoolSetting;
+import dev.mahiro.trollhack.setting.ColorSetting;
+import dev.mahiro.trollhack.setting.FloatSetting;
+import dev.mahiro.trollhack.setting.IntSetting;
 
-import java.awt.Color;
+import java.awt.*;
 
-public final class GuiSettingModule extends Module {
-    public static final GuiSettingModule INSTANCE = new GuiSettingModule();
-
+public final class GuiSetting extends Module {
     private final IntSetting scale = new IntSetting("Scale", 100, 50, 400, 5, 5, null, "", false);
     private final BoolSetting particle = new BoolSetting("Particle", false, null, "", false);
     private final FloatSetting backgroundBlur = new FloatSetting("Background Blur", 0.0f, 0.0f, 1.0f, 0.05f, 0.01f, null, "", false);
@@ -26,7 +27,7 @@ public final class GuiSettingModule extends Module {
     private final ColorSetting textColor = new ColorSetting("Text Color", new Color(255, 250, 253, 255), true, null, "", false);
     private final IntSetting hoverAlpha = new IntSetting("Hover Alpha", 32, 0, 255, 1, 1, null, "", false);
 
-    private GuiSettingModule() {
+    public GuiSetting() {
         super("Gui Setting", "GUI", Category.CLIENT, true);
         setVisible(false);
 

@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Mouse.class)
 public final class MixinMouse {
     @Inject(method = "onMouseButton", at = @At("TAIL"))
-    private void trollhack$postMouseButtonEvent(long window, MouseInput input, int action, CallbackInfo ci) {
+    private void hookOnMouseButton(long window, MouseInput input, int action, CallbackInfo ci) {
         if (action != InputUtil.GLFW_PRESS && action != InputUtil.GLFW_RELEASE) return;
         TrollHack.EVENT_BUS.post(new MouseButtonEvent(input.button(), input.modifiers(), action == InputUtil.GLFW_PRESS));
     }

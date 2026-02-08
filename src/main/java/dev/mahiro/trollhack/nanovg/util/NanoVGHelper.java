@@ -468,12 +468,28 @@ public final class NanoVGHelper {
     }
 
     public static void drawHueBar(float x, float y, float w, float h) {
-        int strips = 60;
-        float stripH = h / strips;
-        for (int i = 0; i < strips; i++) {
-            float t = (float) i / (float) (strips - 1);
-            Color c = Color.getHSBColor(t, 1.0f, 1.0f);
-            drawRect(x, y + i * stripH, w, stripH + 1.0f, c);
+        long vg = getContext();
+        Color[] colors = {
+                new Color(255, 0, 0),
+                new Color(255, 255, 0),
+                new Color(0, 255, 0),
+                new Color(0, 255, 255),
+                new Color(0, 0, 255),
+                new Color(255, 0, 255),
+                new Color(255, 0, 0)
+        };
+        float partH = h / 6.0f;
+        for (int i = 0; i < 6; i++) {
+            float y0 = y + i * partH;
+            float segH = i == 5 ? (y + h - y0) : partH;
+            NVGPaint paint = NVGPaint.create();
+            NVGColor c1 = nvgColor(colors[i]);
+            NVGColor c2 = nvgColor(colors[i + 1]);
+            nvgLinearGradient(vg, x, y0, x, y0 + segH, c1, c2, paint);
+            nvgBeginPath(vg);
+            nvgRect(vg, x, y0, w, segH + 0.5f);
+            nvgFillPaint(vg, paint);
+            nvgFill(vg);
         }
     }
 }

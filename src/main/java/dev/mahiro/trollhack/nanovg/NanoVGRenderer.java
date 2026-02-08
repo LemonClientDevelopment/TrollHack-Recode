@@ -29,6 +29,10 @@ public final class NanoVGRenderer {
     private final List<Consumer<Long>> queuedScreenDrawCalls = new ArrayList<>();
 
     private NanoVGRenderer() {
+
+        // 这个是从我Sakura项目抄过来的
+        // 额额额
+
     }
 
     public void initNanoVG() {
@@ -97,12 +101,7 @@ public final class NanoVGRenderer {
         inFrame = true;
 
         float scaleFactor = (float) client.getWindow().getScaleFactor();
-        nvgBeginFrame(
-                vg,
-                client.getWindow().getFramebufferWidth() / scaleFactor,
-                client.getWindow().getFramebufferHeight() / scaleFactor,
-                scaleFactor
-        );
+        nvgBeginFrame(vg, client.getWindow().getFramebufferWidth() / scaleFactor, client.getWindow().getFramebufferHeight() / scaleFactor, scaleFactor);
 
         drawingLogic.accept(vg);
 
