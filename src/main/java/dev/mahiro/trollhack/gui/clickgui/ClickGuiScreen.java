@@ -4,6 +4,7 @@ import dev.mahiro.trollhack.TrollHack;
 import dev.mahiro.trollhack.gui.clickgui.anim.AnimatedFloat;
 import dev.mahiro.trollhack.gui.clickgui.anim.Easing;
 import dev.mahiro.trollhack.gui.clickgui.component.ModuleButtonComponent;
+import dev.mahiro.trollhack.gui.clickgui.window.ColorPickerWindow;
 import dev.mahiro.trollhack.gui.clickgui.window.ListWindow;
 import dev.mahiro.trollhack.gui.clickgui.window.ModuleSettingWindow;
 import dev.mahiro.trollhack.module.Category;
@@ -11,6 +12,7 @@ import dev.mahiro.trollhack.module.Module;
 import dev.mahiro.trollhack.nanovg.NanoVGRenderer;
 import dev.mahiro.trollhack.nanovg.font.FontLoader;
 import dev.mahiro.trollhack.nanovg.util.NanoVGHelper;
+import dev.mahiro.trollhack.setting.ColorSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -33,6 +35,7 @@ public final class ClickGuiScreen extends Screen {
     private final LinkedHashMap<Category, ListWindow> windows = new LinkedHashMap<>();
     private final List<ModuleSettingWindow> moduleSettingWindows = new ArrayList<>();
     private final List<Object> windowOrder = new ArrayList<>();
+    private ColorPickerWindow activeColorPicker;
 
     private String searchString = "";
     private final AnimatedFloat searchWidth = new AnimatedFloat(Easing.OUT_CUBIC, 250.0f, 0.0f);
@@ -67,6 +70,8 @@ public final class ClickGuiScreen extends Screen {
             float posY = 0.0f;
 
             float trollWidth = width / GuiTheme.SCALE_FACTOR;
+            float trollHeight = height / GuiTheme.SCALE_FACTOR;
+            float defaultHeight = Math.min(400.0f, trollHeight - 2.0f);
 
             for (Category category : Category.values()) {
                 List<ModuleButtonComponent> children = new ArrayList<>();
@@ -78,7 +83,7 @@ public final class ClickGuiScreen extends Screen {
                 window.setX(posX);
                 window.setY(posY);
                 window.setWidth(80.0f);
-                window.setHeight(400.0f);
+                window.setHeight(defaultHeight);
                 windows.put(category, window);
                 windowOrder.add(window);
 
@@ -120,9 +125,17 @@ public final class ClickGuiScreen extends Screen {
 
         for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
             ModuleSettingWindow window = moduleSettingWindows.get(i);
-            if (lastClicked != window && !window.handlesKeyboardInput()) {
+            boolean keepAlive =
+                    lastClicked == window
+                            || (lastClicked instanceof ColorPickerWindow picker && picker.getParent() == window);
+            if (!keepAlive && !window.handlesKeyboardInput()) {
                 closeWindow(window);
             }
+        }
+
+        if (activeColorPicker != null && lastClicked != activeColorPicker && lastClicked != activeColorPicker.getParent()) {
+            closeWindow(activeColorPicker);
+            activeColorPicker = null;
         }
 
         if (GuiTheme.BACKGROUND_BLUR > 0.0f) {
@@ -151,6 +164,8 @@ public final class ClickGuiScreen extends Screen {
                     listWindow.render(trollMouseX, trollMouseY, searchString);
                 } else if (window instanceof ModuleSettingWindow settingWindow) {
                     settingWindow.render(trollMouseX, trollMouseY);
+                } else if (window instanceof ColorPickerWindow colorPickerWindow) {
+                    colorPickerWindow.render(trollMouseX, trollMouseY);
                 }
             }
 
@@ -187,13 +202,14 @@ public final class ClickGuiScreen extends Screen {
         float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
         int button = click.button();
 
+        Object hovered = hitTestWindow(x, y);
+
         mouseState = MouseState.CLICK;
         lastClickX = x;
         lastClickY = y;
         lastClickTimeMs = System.currentTimeMillis();
         lastClickButton = button;
 
-        Object hovered = getHoveredWindow(x, y);
         lastClicked = hovered;
         if (hovered == null) return false;
 
@@ -206,6 +222,8 @@ public final class ClickGuiScreen extends Screen {
                 closeWindow(window);
                 return true;
             }
+        } else if (hovered instanceof ColorPickerWindow window) {
+            window.mouseClicked(x, y, button);
         } else if (hovered instanceof ListWindow window) {
             window.onClick(x, y, button, trollWidth, trollHeight);
         }
@@ -226,6 +244,8 @@ public final class ClickGuiScreen extends Screen {
         if (lastClicked instanceof ModuleSettingWindow window) {
             window.mouseReleased(x, y, button);
             if (window.isCloseRequested()) closeWindow(window);
+        } else if (lastClicked instanceof ColorPickerWindow window) {
+            window.mouseReleased(x, y, button);
         } else if (lastClicked instanceof ListWindow window) {
             window.onRelease(x, y, button, trollHeight, wasDrag);
         }
@@ -254,6 +274,8 @@ public final class ClickGuiScreen extends Screen {
 
         if (lastClicked instanceof ModuleSettingWindow window) {
             window.mouseDragged(x, y, button);
+        } else if (lastClicked instanceof ColorPickerWindow window) {
+            window.mouseDragged(x, y, button);
         } else if (lastClicked instanceof ListWindow window) {
             window.onDrag(x, y, button, trollWidth, trollHeight);
         }
@@ -265,9 +287,12 @@ public final class ClickGuiScreen extends Screen {
         float x = (float) (mouseX / GuiTheme.SCALE_FACTOR);
         float y = (float) (mouseY / GuiTheme.SCALE_FACTOR);
 
-        Object hovered = getHoveredWindow(x, y);
+        Object hovered = hitTestWindow(x, y);
         if (hovered instanceof ModuleSettingWindow window) {
             return window.mouseScrolled(x, y, verticalAmount);
+        }
+        if (hovered instanceof ColorPickerWindow) {
+            return false;
         }
         if (hovered instanceof ListWindow window) {
             window.onMouseWheel(verticalAmount);
@@ -278,12 +303,18 @@ public final class ClickGuiScreen extends Screen {
 
     private Object getHoveredWindow(float mouseX, float mouseY) {
         if (mouseState != MouseState.NONE) return lastClicked;
+        return hitTestWindow(mouseX, mouseY);
+    }
+
+    private Object hitTestWindow(float mouseX, float mouseY) {
         Object result = null;
         for (Object window : windowOrder) {
             if (window instanceof ListWindow listWindow) {
                 if (listWindow.contains(mouseX, mouseY)) result = window;
             } else if (window instanceof ModuleSettingWindow settingWindow) {
                 if (settingWindow.contains(mouseX, mouseY)) result = window;
+            } else if (window instanceof ColorPickerWindow colorPickerWindow) {
+                if (colorPickerWindow.contains(mouseX, mouseY)) result = window;
             }
         }
         return result;
@@ -357,7 +388,7 @@ public final class ClickGuiScreen extends Screen {
 
     public void openModuleSettings(Module module, float mouseX, float mouseY) {
         moduleSettingWindows.removeIf(w -> w.getModule() == module);
-        ModuleSettingWindow window = new ModuleSettingWindow(module);
+        ModuleSettingWindow window = new ModuleSettingWindow(this, module);
 
         float trollWidth = width / GuiTheme.SCALE_FACTOR;
         float trollHeight = height / GuiTheme.SCALE_FACTOR;
@@ -381,7 +412,13 @@ public final class ClickGuiScreen extends Screen {
         windowOrder.remove(window);
         if (window instanceof ModuleSettingWindow settingWindow) {
             moduleSettingWindows.remove(settingWindow);
+        } else if (window instanceof ColorPickerWindow) {
+            if (activeColorPicker == window) activeColorPicker = null;
         }
+    }
+
+    public void closeFloatingWindow(Object window) {
+        closeWindow(window);
     }
 
     private boolean isKeyboardInputActive() {
@@ -395,5 +432,28 @@ public final class ClickGuiScreen extends Screen {
         NONE,
         CLICK,
         DRAG
+    }
+
+    public float getTrollWidth() {
+        return width / GuiTheme.SCALE_FACTOR;
+    }
+
+    public float getTrollHeight() {
+        return height / GuiTheme.SCALE_FACTOR;
+    }
+
+    public void openColorPicker(ModuleSettingWindow parent, ColorSetting setting) {
+        if (activeColorPicker != null) {
+            closeWindow(activeColorPicker);
+        }
+        ColorPickerWindow picker = new ColorPickerWindow(parent, setting);
+        float trollWidth = getTrollWidth();
+        float trollHeight = getTrollHeight();
+        picker.setX(trollWidth / 2.0f - picker.getWidth() / 2.0f);
+        picker.setY(trollHeight / 2.0f - picker.getHeight() / 2.0f);
+        activeColorPicker = picker;
+        windowOrder.add(picker);
+        bringToFront(picker);
+        lastClicked = picker;
     }
 }

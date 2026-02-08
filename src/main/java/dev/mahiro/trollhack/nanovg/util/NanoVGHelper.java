@@ -451,5 +451,14 @@ public final class NanoVGHelper {
     public static void intersectScissor(float x, float y, float w, float h) {
         nvgIntersectScissor(getContext(), x, y, w, h);
     }
-}
 
+    public static void drawHueBar(float x, float y, float w, float h) {
+        int strips = 60;
+        float stripH = h / strips;
+        for (int i = 0; i < strips; i++) {
+            float t = (float) i / (float) (strips - 1);
+            Color c = Color.getHSBColor(t, 1.0f, 1.0f);
+            drawRect(x, y + i * stripH, w, stripH + 1.0f, c);
+        }
+    }
+}

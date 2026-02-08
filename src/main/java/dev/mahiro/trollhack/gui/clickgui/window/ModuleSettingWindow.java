@@ -1,5 +1,6 @@
 package dev.mahiro.trollhack.gui.clickgui.window;
 
+import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
 import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
 import dev.mahiro.trollhack.module.BindMode;
 import dev.mahiro.trollhack.module.Module;
@@ -18,6 +19,7 @@ import java.util.List;
 import static org.lwjgl.nanovg.NanoVG.*;
 
 public final class ModuleSettingWindow {
+    private final ClickGuiScreen screen;
     private final Module module;
 
     private float x;
@@ -40,10 +42,15 @@ public final class ModuleSettingWindow {
     private Setting<?> editingSetting;
     private String editingBuffer = "";
 
-    public ModuleSettingWindow(Module module) {
+    public ModuleSettingWindow(ClickGuiScreen screen, Module module) {
+        this.screen = screen;
         this.module = module;
         this.width = 180.0f;
         this.height = 120.0f;
+    }
+
+    public ClickGuiScreen getScreen() {
+        return screen;
     }
 
     public Module getModule() {
@@ -169,7 +176,7 @@ public final class ModuleSettingWindow {
 
     public void render(float mouseX, float mouseY) {
         float contentHeight = computeContentHeight();
-        height = contentHeight;
+        height = Math.min(contentHeight, screen.getTrollHeight() - 2.0f);
 
         NanoVGHelper.drawShadow(x, y, width, height, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
         NanoVGHelper.drawRect(x, y, width, height, GuiTheme.BACKGROUND);
@@ -253,22 +260,8 @@ public final class ModuleSettingWindow {
 
         if (setting instanceof ColorSetting colorSetting) {
             Color color = colorSetting.getColor();
-            String value = "RGBA";
-            drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, setting.getName(), value, false);
+            drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, setting.getName(), "", false);
             NanoVGHelper.drawRect(rowX + rowW - 20.0f, rowY + 2.0f, 18.0f, rowH - 4.0f, color);
-            rowY += rowH + rowGap;
-
-            if (!colorSetting.isExpanded()) {
-                return rowY;
-            }
-
-            rowY = renderColorSlider("Hue", colorSetting.getHue(), 0.0f, 1.0f, mouseX, mouseY, rowX, rowY, rowW, rowH) + rowGap;
-            rowY = renderColorSlider("Sat", colorSetting.getSaturation(), 0.0f, 1.0f, mouseX, mouseY, rowX, rowY, rowW, rowH) + rowGap;
-            rowY = renderColorSlider("Bri", colorSetting.getBrightness(), 0.0f, 1.0f, mouseX, mouseY, rowX, rowY, rowW, rowH) + rowGap;
-            if (colorSetting.isAllowAlpha()) {
-                rowY = renderColorSlider("Alpha", colorSetting.getAlpha(), 0.0f, 255.0f, mouseX, mouseY, rowX, rowY, rowW, rowH) + rowGap;
-            }
-            drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, "Rainbow", colorSetting.isRainbow() ? "On" : "Off", false);
             return rowY + rowH + rowGap;
         }
 
@@ -422,41 +415,11 @@ public final class ModuleSettingWindow {
 
             if (setting instanceof ColorSetting colorSetting) {
                 if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-                    if (button == 0) colorSetting.setExpanded(!colorSetting.isExpanded());
+                    if (button == 0) screen.openColorPicker(this, colorSetting);
                     if (button == 1) colorSetting.resetValue();
                     return;
                 }
                 rowY += rowH + rowGap;
-
-                if (colorSetting.isExpanded()) {
-                    if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-                        if (button == 0) beginColorDrag(colorSetting, DragTarget.COLOR_HUE, mouseX, rowX, rowW);
-                        return;
-                    }
-                    rowY += rowH + rowGap;
-                    if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-                        if (button == 0) beginColorDrag(colorSetting, DragTarget.COLOR_SAT, mouseX, rowX, rowW);
-                        return;
-                    }
-                    rowY += rowH + rowGap;
-                    if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-                        if (button == 0) beginColorDrag(colorSetting, DragTarget.COLOR_BRI, mouseX, rowX, rowW);
-                        return;
-                    }
-                    rowY += rowH + rowGap;
-                    if (colorSetting.isAllowAlpha()) {
-                        if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-                            if (button == 0) beginColorDrag(colorSetting, DragTarget.COLOR_ALPHA, mouseX, rowX, rowW);
-                            return;
-                        }
-                        rowY += rowH + rowGap;
-                    }
-                    if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-                        if (button == 0) colorSetting.setRainbow(!colorSetting.isRainbow());
-                        return;
-                    }
-                    rowY += rowH + rowGap;
-                }
                 continue;
             }
 
@@ -505,11 +468,6 @@ public final class ModuleSettingWindow {
                 updateNumberSettingFromMouse(numberSetting, mouseX, rowX, rowW);
                 return;
             }
-            if (dragSetting instanceof ColorSetting colorSetting) {
-                float rowX = x + 4.0f;
-                float rowW = width - 8.0f;
-                updateColorFromMouse(colorSetting, mouseX, rowX, rowW);
-            }
         }
     }
 
@@ -542,15 +500,8 @@ public final class ModuleSettingWindow {
 
         for (Setting<?> setting : module.getSettings()) {
             if (!setting.isVisible()) continue;
-            if (setting instanceof ColorSetting colorSetting) {
+            if (setting instanceof ColorSetting) {
                 y += rowH + rowGap;
-                if (colorSetting.isExpanded()) {
-                    y += rowH + rowGap;
-                    y += rowH + rowGap;
-                    y += rowH + rowGap;
-                    if (colorSetting.isAllowAlpha()) y += rowH + rowGap;
-                    y += rowH + rowGap;
-                }
                 continue;
             }
             if (setting instanceof MultiBoolSetting multi) {
@@ -574,25 +525,6 @@ public final class ModuleSettingWindow {
         setting.setFromDouble(value);
     }
 
-    private void beginColorDrag(ColorSetting setting, DragTarget target, float mouseX, float rowX, float rowW) {
-        sliderDragging = true;
-        dragTarget = target;
-        dragSetting = setting;
-        updateColorFromMouse(setting, mouseX, rowX, rowW);
-    }
-
-    private void updateColorFromMouse(ColorSetting setting, float mouseX, float rowX, float rowW) {
-        float t = (mouseX - rowX) / rowW;
-        if (t < 0.0f) t = 0.0f;
-        if (t > 1.0f) t = 1.0f;
-        switch (dragTarget) {
-            case COLOR_HUE -> setting.setHsb(t, setting.getSaturation(), setting.getBrightness());
-            case COLOR_SAT -> setting.setHsb(setting.getHue(), t, setting.getBrightness());
-            case COLOR_BRI -> setting.setHsb(setting.getHue(), setting.getSaturation(), t);
-            case COLOR_ALPHA -> setting.setAlpha((int) Math.round(t * 255.0f));
-        }
-    }
-
     private static String stripTrailingZeros(double value) {
         String s = String.valueOf(value);
         if (!s.contains(".")) return s;
@@ -603,18 +535,14 @@ public final class ModuleSettingWindow {
 
     private enum DragTarget {
         NONE,
-        NUMBER,
-        COLOR_HUE,
-        COLOR_SAT,
-        COLOR_BRI,
-        COLOR_ALPHA
+        NUMBER
     }
 
     private static boolean isCtrlDown() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return false;
         return InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
-            || InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
+                || InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
     }
 
     private void copySettingsToClipboard() {

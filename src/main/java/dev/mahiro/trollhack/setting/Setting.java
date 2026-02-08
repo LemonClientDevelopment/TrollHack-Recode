@@ -26,11 +26,11 @@ public abstract class Setting<T> {
     private final List<BiConsumer<T, T>> valueListeners = new ArrayList<>();
 
     protected Setting(
-        String name,
-        T defaultValue,
-        Supplier<Boolean> visibility,
-        String description,
-        boolean isTransient
+            String name,
+            T defaultValue,
+            Supplier<Boolean> visibility,
+            String description,
+            boolean isTransient
     ) {
         this.name = Objects.requireNonNull(name, "name");
         this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");

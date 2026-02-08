@@ -27,6 +27,9 @@ public final class ListWindow {
     private boolean minimized;
 
     private boolean dragging;
+    private boolean resizing;
+    private HAlign resizeH = HAlign.CENTER;
+    private VAlign resizeV = VAlign.CENTER;
     private float dragOffsetX;
     private float dragOffsetY;
     private float preDragX;
@@ -69,6 +72,18 @@ public final class ListWindow {
 
     public void setHeight(float height) {
         this.height = height;
+    }
+
+    private float minWidth() {
+        return 80.0f;
+    }
+
+    private float maxWidth() {
+        return Math.max(minWidth(), 200.0f);
+    }
+
+    private float minHeight() {
+        return 100.0f;
     }
 
     public boolean contains(float mouseX, float mouseY) {
@@ -146,14 +161,43 @@ public final class ListWindow {
         float localX = mouseX - x;
         float localY = mouseY - y;
 
-        if (localY <= draggableHeight()) {
-            if (button == 0) {
-                dragging = true;
-                dragOffsetX = localX;
-                dragOffsetY = localY;
+        if (button == 0) {
+            float centerSplitterH = (float) Math.min(10.0, preDragWidth / 3.0);
+            float centerSplitterV = (float) Math.min(10.0, preDragHeight / 3.0);
+
+            resizeH = localX >= -2.0f && localX <= centerSplitterH
+                ? HAlign.LEFT
+                : localX >= centerSplitterH && localX <= preDragWidth - centerSplitterH
+                    ? HAlign.CENTER
+                    : localX >= preDragWidth - centerSplitterH && localX <= preDragWidth + 2.0f
+                        ? HAlign.RIGHT
+                        : null;
+
+            float centerSplitterVCenter =
+                (draggableHeight() != height && resizeH == HAlign.CENTER)
+                    ? 2.5f
+                    : (float) Math.min(15.0, preDragWidth / 3.0);
+
+            resizeV = localY >= -2.0f && localY <= centerSplitterVCenter
+                ? VAlign.TOP
+                : localY >= centerSplitterVCenter && localY <= preDragHeight - centerSplitterV
+                    ? VAlign.CENTER
+                    : localY >= preDragHeight - centerSplitterV && localY <= preDragHeight + 2.0f
+                        ? VAlign.BOTTOM
+                        : null;
+
+            if (resizeH != null && resizeV != null) {
+                if (!minimized && (resizeH != HAlign.CENTER || resizeV != VAlign.CENTER)) {
+                    resizing = true;
+                } else if (draggableHeight() == height || localY <= draggableHeight()) {
+                    dragging = true;
+                    dragOffsetX = localX;
+                    dragOffsetY = localY;
+                }
             }
-            return;
         }
+
+        if (localY <= draggableHeight()) return;
 
         if (minimized) return;
 
@@ -172,6 +216,7 @@ public final class ListWindow {
 
     public void onRelease(float mouseX, float mouseY, int button, float trollHeight, boolean wasDrag) {
         if (button == 0) dragging = false;
+        if (button == 0) resizing = false;
 
         if (!wasDrag && button == 1 && preClickY - preDragY < draggableHeight()) {
             minimized = !minimized;
@@ -183,9 +228,67 @@ public final class ListWindow {
     }
 
     public void onDrag(float mouseX, float mouseY, int button, float trollWidth, float trollHeight) {
-        if (!dragging || button != 0) return;
-        x = clamp(mouseX - dragOffsetX, 0.0f, trollWidth - width - 1.0f);
-        y = clamp(mouseY - dragOffsetY, 0.0f, trollHeight - height - 1.0f);
+        if (button != 0) return;
+
+        if (resizing && !minimized) {
+            float dx = mouseX - preClickX;
+            float dy = mouseY - preClickY;
+
+            float newX = preDragX;
+            float newY = preDragY;
+            float newW = preDragWidth;
+            float newH = preDragHeight;
+
+            if (resizeH == HAlign.LEFT) {
+                newX = preDragX + dx;
+                newW = preDragWidth - dx;
+            } else if (resizeH == HAlign.RIGHT) {
+                newW = preDragWidth + dx;
+            }
+
+            if (resizeV == VAlign.TOP) {
+                newY = preDragY + dy;
+                newH = preDragHeight - dy;
+            } else if (resizeV == VAlign.BOTTOM) {
+                newH = preDragHeight + dy;
+            }
+
+            float minW = minWidth();
+            float maxW = Math.min(maxWidth(), trollWidth - 1.0f);
+            float minH = minHeight();
+            float maxH = trollHeight - 1.0f;
+
+            if (newW < minW) {
+                if (resizeH == HAlign.LEFT) newX -= (minW - newW);
+                newW = minW;
+            }
+            if (newW > maxW) {
+                if (resizeH == HAlign.LEFT) newX += (newW - maxW);
+                newW = maxW;
+            }
+            if (newH < minH) {
+                if (resizeV == VAlign.TOP) newY -= (minH - newH);
+                newH = minH;
+            }
+            if (newH > maxH) {
+                if (resizeV == VAlign.TOP) newY += (newH - maxH);
+                newH = maxH;
+            }
+
+            newX = clamp(newX, 0.0f, trollWidth - newW - 1.0f);
+            newY = clamp(newY, 0.0f, trollHeight - newH - 1.0f);
+
+            x = newX;
+            y = newY;
+            width = newW;
+            height = newH;
+            return;
+        }
+
+        if (dragging) {
+            x = clamp(mouseX - dragOffsetX, 0.0f, trollWidth - width - 1.0f);
+            y = clamp(mouseY - dragOffsetY, 0.0f, trollHeight - height - 1.0f);
+        }
     }
 
     public void onMouseWheel(double amount) {
@@ -271,5 +374,17 @@ public final class ListWindow {
         if (v < min) return min;
         if (v > max) return max;
         return v;
+    }
+
+    private enum HAlign {
+        LEFT,
+        CENTER,
+        RIGHT
+    }
+
+    private enum VAlign {
+        TOP,
+        CENTER,
+        BOTTOM
     }
 }
