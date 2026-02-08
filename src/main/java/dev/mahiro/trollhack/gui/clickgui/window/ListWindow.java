@@ -92,7 +92,7 @@ public final class ListWindow {
     }
 
     private float draggableHeight() {
-        return NanoVGHelper.getFontHeight(FontLoader.bold(), 12.0f) + 6.0f;
+        return NanoVGHelper.getFontHeight(FontLoader.bold(), 11.0f) + 6.0f;
     }
 
     public void render(float mouseX, float mouseY, String searchString) {
@@ -110,7 +110,7 @@ public final class ListWindow {
         if (GuiTheme.TITLE_BAR) {
             NanoVGHelper.drawRect(x, y, width, dragHeight, GuiTheme.PRIMARY);
         }
-        NanoVGHelper.drawString(title, x + 3.0f, y + 3.0f, FontLoader.bold(), 12.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(title, x + 3.0f, y + 3.5f, FontLoader.bold(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
         if (minimized) return;
 

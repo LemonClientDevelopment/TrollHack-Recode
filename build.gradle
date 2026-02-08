@@ -49,8 +49,8 @@ processResources {
                 "loader_version": project.loader_version
     }
 
-    from("参考项目/Sakura/src/main/resources") {
-        include "assets/sakura/fonts/**"
+    from("老版本/TrollHack-master/src/main/resources") {
+        include "assets/trollhack/fonts/**"
     }
 }
 

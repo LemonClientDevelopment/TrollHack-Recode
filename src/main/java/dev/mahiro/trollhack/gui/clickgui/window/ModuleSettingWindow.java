@@ -82,7 +82,7 @@ public final class ModuleSettingWindow {
     }
 
     private float draggableHeight() {
-        return NanoVGHelper.getFontHeight(FontLoader.bold(), 12.0f) + 6.0f;
+        return NanoVGHelper.getFontHeight(FontLoader.bold(), 11.0f) + 6.0f;
     }
 
     public boolean isBindListening() {
@@ -175,6 +175,10 @@ public final class ModuleSettingWindow {
     }
 
     public void render(float mouseX, float mouseY) {
+        float fontSize = 11.0f;
+        float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), fontSize) + 3.0f;
+        float rowGap = 2.0f;
+
         float contentHeight = computeContentHeight();
         height = Math.min(contentHeight, screen.getTrollHeight() - 2.0f);
 
@@ -189,13 +193,11 @@ public final class ModuleSettingWindow {
             NanoVGHelper.drawRect(x, y, width, draggableHeight(), GuiTheme.PRIMARY);
         }
         int titleFont = FontLoader.bold();
-        NanoVGHelper.drawString(module.getName(), x + 3.0f, y + 3.0f, titleFont, 12.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(module.getName(), x + 3.0f, y + 3.5f, titleFont, 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
         float rowX = x + 4.0f;
         float rowW = width - 8.0f;
-        float rowH = 14.0f;
         float rowY = y + draggableHeight() + 4.0f - scroll;
-        float rowGap = 2.0f;
 
         float scissorX = x;
         float scissorY = y + draggableHeight();
@@ -293,9 +295,9 @@ public final class ModuleSettingWindow {
         if (hovered) {
             NanoVGHelper.drawRect(x, y, w, h, new Color(255, 255, 255, GuiTheme.HOVER_ALPHA));
         }
-        int font = FontLoader.medium();
-        NanoVGHelper.drawString(label, x + 2.0f, y + 2.0f, font, 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
-        NanoVGHelper.drawString(value, x + w - 2.0f, y + 2.0f, font, 11.0f, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        int font = FontLoader.regular();
+        NanoVGHelper.drawString(label, x + 2.0f, y + 1.0f, font, 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(value, x + w - 2.0f, y + 1.0f, font, 11.0f, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP, GuiTheme.TEXT);
         if (focused) {
             NanoVGHelper.drawRectOutline(x, y, w, h, 1.0f, GuiTheme.PRIMARY);
         }
@@ -328,7 +330,7 @@ public final class ModuleSettingWindow {
 
         float rowX = x + 4.0f;
         float rowW = width - 8.0f;
-        float rowH = 14.0f;
+        float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f) + 3.0f;
         float rowY = y + draggableHeight() + 4.0f - scroll;
         float rowGap = 2.0f;
 
@@ -492,7 +494,7 @@ public final class ModuleSettingWindow {
     }
 
     private float computeContentHeight() {
-        float rowH = 14.0f;
+        float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f) + 3.0f;
         float rowGap = 2.0f;
         float y = draggableHeight() + 4.0f;
 

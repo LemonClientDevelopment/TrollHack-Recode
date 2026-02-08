@@ -5,15 +5,15 @@ public final class FontLoader {
     }
 
     public static int regular() {
-        return FontManager.fontWithCjkFallback("regular.otf");
+        return FontManager.fontWithCjkFallback("LexendDeca-Regular.ttf");
     }
 
     public static int bold() {
-        return FontManager.fontWithCjkFallback("regular_bold.otf");
+        return FontManager.fontWithCjkFallback("LexendDeca-Regular.ttf");
     }
 
     public static int medium() {
-        return FontManager.fontWithCjkFallback("regular_medium.otf");
+        return FontManager.fontWithCjkFallback("LexendDeca-Regular.ttf");
     }
 
     public static int greycliffSemi() {
@@ -24,14 +24,6 @@ public final class FontLoader {
         return FontManager.font("solid.ttf");
     }
 
-    public static int icons() {
-        return FontManager.font("woqubuzaoshuo.ttf");
-    }
-
-    public static int newIc() {
-        return FontManager.font("icon.ttf");
-    }
-
     public static int cjk() {
         return FontManager.font("kuriyama.ttf");
     }
@@ -40,4 +32,3 @@ public final class FontLoader {
         return FontManager.fontWithCjkFallback("Comfortaa.ttf");
     }
 }
-

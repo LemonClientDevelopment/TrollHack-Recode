@@ -69,12 +69,12 @@ public final class ColorPickerWindow {
     }
 
     private float draggableHeight() {
-        return NanoVGHelper.getFontHeight(FontLoader.bold(), 12.0f) + 6.0f;
+        return NanoVGHelper.getFontHeight(FontLoader.bold(), 11.0f) + 6.0f;
     }
 
     private void updateLayout() {
         float dragHeight = draggableHeight();
-        float rowH = 14.0f;
+        float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f) + 3.0f;
         float gap = 2.0f;
 
         float y0 = dragHeight + 4.0f;
@@ -99,7 +99,7 @@ public final class ColorPickerWindow {
         if (GuiTheme.TITLE_BAR) {
             NanoVGHelper.drawRect(x, y, width, dragHeight, GuiTheme.PRIMARY);
         }
-        NanoVGHelper.drawString("Color Picker", x + 3.0f, y + 3.0f, FontLoader.bold(), 12.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString("Color Picker", x + 3.0f, y + 3.5f, FontLoader.bold(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
         float fieldH = height - dragHeight - 4.0f;
         float fieldX0 = x + 4.0f;
@@ -126,7 +126,7 @@ public final class ColorPickerWindow {
         NanoVGHelper.drawRect(hueX0 - 1.0f, hueLineY, hueW + 2.0f, 1.0f, new Color(255, 255, 255, 220));
 
         float rightX = x + width - 4.0f - 128.0f;
-        float rowH = 14.0f;
+        float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f) + 3.0f;
         float gap = 2.0f;
         float rowY = y + dragHeight + 4.0f;
 
@@ -162,8 +162,8 @@ public final class ColorPickerWindow {
         if (hovered) {
             NanoVGHelper.drawRect(x, y, w, h, new Color(255, 255, 255, GuiTheme.HOVER_ALPHA));
         }
-        NanoVGHelper.drawString(label, x + 2.0f, y + 2.0f, FontLoader.medium(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
-        NanoVGHelper.drawString(String.valueOf(value), x + w - 2.0f, y + 2.0f, FontLoader.medium(), 11.0f, org.lwjgl.nanovg.NanoVG.NVG_ALIGN_RIGHT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(label, x + 2.0f, y + 1.0f, FontLoader.regular(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(String.valueOf(value), x + w - 2.0f, y + 1.0f, FontLoader.regular(), 11.0f, org.lwjgl.nanovg.NanoVG.NVG_ALIGN_RIGHT | NVG_ALIGN_TOP, GuiTheme.TEXT);
     }
 
     private void drawButton(float mouseX, float mouseY, float x, float y, float w, float h, String label) {
@@ -172,7 +172,7 @@ public final class ColorPickerWindow {
             NanoVGHelper.drawRect(x, y, w, h, new Color(255, 255, 255, GuiTheme.HOVER_ALPHA));
         }
         NanoVGHelper.drawRectOutline(x, y, w, h, 1.0f, new Color(0, 0, 0, 120));
-        NanoVGHelper.drawString(label, x + 2.0f, y + 2.0f, FontLoader.medium(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(label, x + 2.0f, y + 1.0f, FontLoader.regular(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
     }
 
     public void mouseClicked(float mouseX, float mouseY, int button) {
@@ -295,7 +295,7 @@ public final class ColorPickerWindow {
         if (mouseX >= hueX0 && mouseX <= hueX1 && mouseY >= fieldY0 && mouseY <= fieldY1) return DragTarget.HUE;
 
         float rightX = sliderX();
-        float rowH = 14.0f;
+        float rowH = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f) + 3.0f;
         float gap = 2.0f;
         float rowY = y + dragHeight + 4.0f;
 

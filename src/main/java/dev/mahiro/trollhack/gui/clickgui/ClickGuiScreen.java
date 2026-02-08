@@ -69,8 +69,8 @@ public final class ClickGuiScreen extends Screen {
             float posX = 0.0f;
             float posY = 0.0f;
 
-            float trollWidth = width / GuiTheme.SCALE_FACTOR;
-            float trollHeight = height / GuiTheme.SCALE_FACTOR;
+            float trollWidth = getTrollWidth();
+            float trollHeight = getTrollHeight();
             float defaultHeight = Math.min(400.0f, trollHeight - 2.0f);
 
             for (Category category : Category.values()) {
@@ -120,8 +120,10 @@ public final class ClickGuiScreen extends Screen {
         MinecraftClient client = MinecraftClient.getInstance();
         float multiplier = getTransitionMultiplier();
 
-        float trollMouseX = mouseX / GuiTheme.SCALE_FACTOR;
-        float trollMouseY = mouseY / GuiTheme.SCALE_FACTOR;
+        float actualMouseX = mouseX * (getActualWidth() / (float) width);
+        float actualMouseY = mouseY * (getActualHeight() / (float) height);
+        float trollMouseX = actualMouseX / GuiTheme.SCALE_FACTOR;
+        float trollMouseY = actualMouseY / GuiTheme.SCALE_FACTOR;
 
         for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
             ModuleSettingWindow window = moduleSettingWindows.get(i);
@@ -146,8 +148,8 @@ public final class ClickGuiScreen extends Screen {
         }
 
         NanoVGRenderer.INSTANCE.draw(vg -> {
-            float trollWidth = width / GuiTheme.SCALE_FACTOR;
-            float trollHeight = height / GuiTheme.SCALE_FACTOR;
+            float trollWidth = getTrollWidth();
+            float trollHeight = getTrollHeight();
 
             NanoVGHelper.save();
             NanoVGHelper.scale(vg, GuiTheme.SCALE_FACTOR, GuiTheme.SCALE_FACTOR);
@@ -184,8 +186,8 @@ public final class ClickGuiScreen extends Screen {
         long now = System.currentTimeMillis();
         if (now - searchUpdateTimeMs > 5000L) return;
 
-        int font = FontLoader.medium();
-        float size = 16.0f;
+        int font = FontLoader.regular();
+        float size = 22.0f;
         float w = searchWidth.get();
         float x = trollWidth / 2.0f - w / 2.0f;
         float y = trollHeight / 2.0f;
@@ -198,8 +200,10 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
-        float x = (float) (click.x() / GuiTheme.SCALE_FACTOR);
-        float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
+        float actualMouseX = (float) (click.x() * (getActualWidth() / (float) width));
+        float actualMouseY = (float) (click.y() * (getActualHeight() / (float) height));
+        float x = actualMouseX / GuiTheme.SCALE_FACTOR;
+        float y = actualMouseY / GuiTheme.SCALE_FACTOR;
         int button = click.button();
 
         Object hovered = hitTestWindow(x, y);
@@ -234,8 +238,10 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseReleased(Click click) {
-        float x = (float) (click.x() / GuiTheme.SCALE_FACTOR);
-        float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
+        float actualMouseX = (float) (click.x() * (getActualWidth() / (float) width));
+        float actualMouseY = (float) (click.y() * (getActualHeight() / (float) height));
+        float x = actualMouseX / GuiTheme.SCALE_FACTOR;
+        float y = actualMouseY / GuiTheme.SCALE_FACTOR;
         int button = click.button();
 
         float trollHeight = height / GuiTheme.SCALE_FACTOR;
@@ -256,8 +262,10 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseDragged(Click click, double offsetX, double offsetY) {
-        float x = (float) (click.x() / GuiTheme.SCALE_FACTOR);
-        float y = (float) (click.y() / GuiTheme.SCALE_FACTOR);
+        float actualMouseX = (float) (click.x() * (getActualWidth() / (float) width));
+        float actualMouseY = (float) (click.y() * (getActualHeight() / (float) height));
+        float x = actualMouseX / GuiTheme.SCALE_FACTOR;
+        float y = actualMouseY / GuiTheme.SCALE_FACTOR;
         int button = click.button();
 
         long now = System.currentTimeMillis();
@@ -284,8 +292,10 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        float x = (float) (mouseX / GuiTheme.SCALE_FACTOR);
-        float y = (float) (mouseY / GuiTheme.SCALE_FACTOR);
+        float actualMouseX = (float) (mouseX * (getActualWidth() / (float) width));
+        float actualMouseY = (float) (mouseY * (getActualHeight() / (float) height));
+        float x = actualMouseX / GuiTheme.SCALE_FACTOR;
+        float y = actualMouseY / GuiTheme.SCALE_FACTOR;
 
         Object hovered = hitTestWindow(x, y);
         if (hovered instanceof ModuleSettingWindow window) {
@@ -359,8 +369,8 @@ public final class ClickGuiScreen extends Screen {
 
     private void setSearchString(String value) {
         searchString = value == null ? "" : value;
-        int font = FontLoader.medium();
-        float size = 16.0f;
+        int font = FontLoader.regular();
+        float size = 22.0f;
         float w = NanoVGHelper.getTextWidth(searchString, font, size);
         searchWidth.update(w);
         searchUpdateTimeMs = System.currentTimeMillis();
@@ -401,6 +411,7 @@ public final class ClickGuiScreen extends Screen {
         moduleSettingWindows.add(window);
         windowOrder.add(window);
         bringToFront(window);
+        lastClicked = window;
     }
 
     private void bringToFront(Object window) {
@@ -435,11 +446,11 @@ public final class ClickGuiScreen extends Screen {
     }
 
     public float getTrollWidth() {
-        return width / GuiTheme.SCALE_FACTOR;
+        return getActualWidth() / GuiTheme.SCALE_FACTOR;
     }
 
     public float getTrollHeight() {
-        return height / GuiTheme.SCALE_FACTOR;
+        return getActualHeight() / GuiTheme.SCALE_FACTOR;
     }
 
     public void openColorPicker(ModuleSettingWindow parent, ColorSetting setting) {
@@ -455,5 +466,17 @@ public final class ClickGuiScreen extends Screen {
         windowOrder.add(picker);
         bringToFront(picker);
         lastClicked = picker;
+    }
+
+    private float getActualWidth() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        float scaleFactor = (float) client.getWindow().getScaleFactor();
+        return client.getWindow().getFramebufferWidth() / scaleFactor;
+    }
+
+    private float getActualHeight() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        float scaleFactor = (float) client.getWindow().getScaleFactor();
+        return client.getWindow().getFramebufferHeight() / scaleFactor;
     }
 }

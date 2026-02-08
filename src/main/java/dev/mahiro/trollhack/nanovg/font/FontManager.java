@@ -60,12 +60,8 @@ public final class FontManager {
 
     private static FontData loadFontData(String fontName) {
         try {
-            String path = "/assets/sakura/fonts/" + fontName;
-            InputStream is = FontManager.class.getResourceAsStream(path);
-            if (is == null) {
-                TrollHack.LOGGER.error("Missing font resource: {}", path);
-                return null;
-            }
+            InputStream is = openFontStream(fontName);
+            if (is == null) return null;
 
             byte[] bytes = is.readAllBytes();
             ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
@@ -78,7 +74,22 @@ public final class FontManager {
         }
     }
 
+    private static InputStream openFontStream(String fontName) {
+        String[] prefixes = {
+            "/assets/trollhack/fonts/",
+            "/assets/sakura/fonts/"
+        };
+
+        for (String prefix : prefixes) {
+            String path = prefix + fontName;
+            InputStream is = FontManager.class.getResourceAsStream(path);
+            if (is != null) return is;
+        }
+
+        TrollHack.LOGGER.error("Missing font resource: {}", fontName);
+        return null;
+    }
+
     private record FontData(ByteBuffer buffer) {
     }
 }
-

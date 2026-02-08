@@ -33,7 +33,8 @@ public final class ModuleButtonComponent {
     }
 
     public float getHeight() {
-        return 14.0f;
+        float fontHeight = NanoVGHelper.getFontHeight(FontLoader.regular(), 11.0f);
+        return fontHeight + 3.0f;
     }
 
     public boolean isVisible() {
@@ -73,7 +74,7 @@ public final class ModuleButtonComponent {
             NanoVGHelper.drawRect(x, y, width, h, new Color(255, 255, 255, GuiTheme.HOVER_ALPHA));
         }
 
-        NanoVGHelper.drawString(module.getName(), x + 2.0f, y + 2.0f, FontLoader.medium(), 12.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
+        NanoVGHelper.drawString(module.getName(), x + 2.0f, y + 1.0f, FontLoader.regular(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
     }
 
     public void mouseClicked(float mouseX, float mouseY, int button) {
