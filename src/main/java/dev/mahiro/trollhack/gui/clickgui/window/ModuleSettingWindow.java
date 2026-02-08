@@ -2,6 +2,8 @@ package dev.mahiro.trollhack.gui.clickgui.window;
 
 import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
 import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
+import dev.mahiro.trollhack.gui.clickgui.anim.AnimatedFloat;
+import dev.mahiro.trollhack.gui.clickgui.anim.Easing;
 import dev.mahiro.trollhack.module.BindMode;
 import dev.mahiro.trollhack.module.Module;
 import dev.mahiro.trollhack.nanovg.font.FontLoader;
@@ -36,6 +38,14 @@ public final class ModuleSettingWindow {
     private DragTarget dragTarget = DragTarget.NONE;
     private Setting<?> dragSetting;
 
+    private BindMode lastBindMode;
+    private final AnimatedFloat bindModeProgress;
+    private boolean bindModePressed;
+    private boolean bindModeDragging;
+    private float bindModePressX;
+    private float bindModeRowX;
+    private float bindModeRowW;
+
     private boolean closeRequested;
     private boolean bindListening;
 
@@ -47,6 +57,9 @@ public final class ModuleSettingWindow {
         this.module = module;
         this.width = 180.0f;
         this.height = 120.0f;
+
+        this.lastBindMode = module.getBindMode();
+        this.bindModeProgress = new AnimatedFloat(Easing.OUT_QUART, 250.0f, bindModeNormalized(lastBindMode));
     }
 
     public ClickGuiScreen getScreen() {
@@ -67,6 +80,14 @@ public final class ModuleSettingWindow {
 
     public void setY(float y) {
         this.y = y;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
     }
 
     public float getWidth() {
@@ -219,6 +240,12 @@ public final class ModuleSettingWindow {
         rowY += rowH + rowGap;
         drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, "Bind", bindListening ? "..." : keyName(module.getBindKey()), false);
         rowY += rowH + rowGap;
+        BindMode bindMode = module.getBindMode();
+        if (bindMode != lastBindMode && !bindModePressed) {
+            lastBindMode = bindMode;
+            bindModeProgress.update(bindModeNormalized(bindMode));
+        }
+        NanoVGHelper.drawRect(rowX, rowY, rowW * bindModeProgress.get(), rowH, GuiTheme.PRIMARY);
         drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, "Mode", module.getBindMode().name(), false);
         rowY += rowH + rowGap;
 
@@ -365,7 +392,13 @@ public final class ModuleSettingWindow {
         }
         rowY += rowH + rowGap;
         if (inRect(mouseX, mouseY, rowX, rowY, rowW, rowH)) {
-            if (button == 0) module.setBindMode(nextBindMode(module.getBindMode()));
+            if (button == 0) {
+                bindModePressed = true;
+                bindModeDragging = false;
+                bindModePressX = mouseX;
+                bindModeRowX = rowX;
+                bindModeRowW = rowW;
+            }
             return;
         }
         rowY += rowH + rowGap;
@@ -463,6 +496,22 @@ public final class ModuleSettingWindow {
             dragTarget = DragTarget.NONE;
             dragSetting = null;
         }
+
+        if (button == 0 && bindModePressed) {
+            bindModePressed = false;
+            if (!bindModeDragging) {
+                BindMode next = nextBindMode(module.getBindMode());
+                module.setBindMode(next);
+                lastBindMode = next;
+                bindModeProgress.update(bindModeNormalized(next));
+            } else {
+                BindMode snapped = bindModeFromProgress(bindModeProgress.get());
+                module.setBindMode(snapped);
+                lastBindMode = snapped;
+                bindModeProgress.update(bindModeNormalized(snapped));
+            }
+            bindModeDragging = false;
+        }
     }
 
     public void mouseDragged(float mouseX, float mouseY, int button) {
@@ -471,6 +520,16 @@ public final class ModuleSettingWindow {
             x = mouseX - dragOffsetX;
             y = mouseY - dragOffsetY;
             return;
+        }
+
+        if (bindModePressed) {
+            if (!bindModeDragging && Math.abs(mouseX - bindModePressX) > 2.0f) {
+                bindModeDragging = true;
+            }
+            if (bindModeDragging) {
+                updateBindModeFromMouse(mouseX, bindModeRowX, bindModeRowW);
+                return;
+            }
         }
 
         if (sliderDragging && dragSetting != null) {
@@ -535,6 +594,34 @@ public final class ModuleSettingWindow {
         if (t > 1.0f) t = 1.0f;
         double value = setting.getMin() + (setting.getMax() - setting.getMin()) * t;
         setting.setFromDouble(value);
+    }
+
+    private void updateBindModeFromMouse(float mouseX, float rowX, float rowW) {
+        float t = (mouseX - rowX) / rowW;
+        if (t < 0.0f) t = 0.0f;
+        if (t > 1.0f) t = 1.0f;
+        bindModeProgress.forceUpdate(t);
+        BindMode mode = bindModeFromProgress(t);
+        if (mode != module.getBindMode()) {
+            module.setBindMode(mode);
+            lastBindMode = mode;
+        }
+    }
+
+    private static float bindModeNormalized(BindMode mode) {
+        BindMode[] values = BindMode.values();
+        if (values.length <= 1) return 0.0f;
+        return mode.ordinal() / (float) (values.length - 1);
+    }
+
+    private static BindMode bindModeFromProgress(float t) {
+        BindMode[] values = BindMode.values();
+        if (values.length == 0) return BindMode.HOLD;
+        if (values.length == 1) return values[0];
+        int index = Math.round(t * (values.length - 1));
+        if (index < 0) index = 0;
+        if (index >= values.length) index = values.length - 1;
+        return values[index];
     }
 
     private static String stripTrailingZeros(double value) {

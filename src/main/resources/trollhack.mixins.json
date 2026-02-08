@@ -7,7 +7,7 @@
     "input.MixinKeyboard",
     "input.MixinMouse",
     "render.MixinGameRenderer",
-    "render.MixinMinecraftClient",
+    "client.MixinMinecraftClient",
     "render.MixinScreen"
   ],
   "injectors": {

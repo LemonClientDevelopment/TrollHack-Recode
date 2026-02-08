@@ -6,7 +6,9 @@ public final class GuiTheme {
     public static int SCALE_PERCENT = 100;
     private static float prevScale = 1.0f;
     private static float scale = 1.0f;
-    private static long lastScaleStepMs = System.currentTimeMillis();
+    private static float targetScale = 1.0f;
+    private static long lastScaleChangeMs = System.currentTimeMillis();
+    private static long lastScaleTickMs = System.currentTimeMillis();
 
     public static Color PRIMARY = new Color(255, 140, 180, 220);
     public static Color BACKGROUND = new Color(40, 32, 36, 160);
@@ -29,24 +31,28 @@ public final class GuiTheme {
 
     public static void setScalePercent(int scalePercent) {
         SCALE_PERCENT = clampInt(scalePercent, 50, 400);
-        lastScaleStepMs = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+        lastScaleChangeMs = now;
+        targetScale = SCALE_PERCENT / 100.0f;
     }
 
     public static void tick() {
         prevScale = scale;
 
         long now = System.currentTimeMillis();
-        if (now - lastScaleStepMs < 500L) return;
-        lastScaleStepMs = now;
+        float dt = (now - lastScaleTickMs) / 1000.0f;
+        lastScaleTickMs = now;
+        if (dt <= 0.0f) return;
 
-        float target = getRoundedScale();
-        float diff = scale - target;
-        if (diff < -0.025f) {
-            scale += 0.025f;
-        } else if (diff > 0.025f) {
-            scale -= 0.025f;
-        } else {
-            scale = target;
+        float rawTarget = SCALE_PERCENT / 100.0f;
+        float snappedTarget = (now - lastScaleChangeMs > 200L) ? getRoundedScale(rawTarget) : rawTarget;
+        targetScale = snappedTarget;
+
+        float smoothing = 18.0f;
+        float t = 1.0f - (float) Math.exp(-smoothing * dt);
+        scale = scale + (targetScale - scale) * t;
+        if (Math.abs(targetScale - scale) < 0.0001f) {
+            scale = targetScale;
         }
     }
 
@@ -68,8 +74,7 @@ public final class GuiTheme {
         return withAlpha(getIdleOverlay(), clampInt(HOVER_ALPHA * 2, 0, 255));
     }
 
-    private static float getRoundedScale() {
-        float raw = SCALE_PERCENT / 100.0f;
+    private static float getRoundedScale(float raw) {
         return Math.round(raw / 0.1f) * 0.1f;
     }
 

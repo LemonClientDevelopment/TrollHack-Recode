@@ -481,8 +481,20 @@ public final class ClickGuiScreen extends Screen {
         ColorPickerWindow picker = new ColorPickerWindow(parent, setting);
         float trollWidth = getTrollWidth();
         float trollHeight = getTrollHeight();
-        picker.setX(trollWidth / 2.0f - picker.getWidth() / 2.0f);
-        picker.setY(trollHeight / 2.0f - picker.getHeight() / 2.0f);
+        float margin = 4.0f;
+        float x = parent.getX() + parent.getWidth() + margin;
+        if (x + picker.getWidth() > trollWidth) {
+            x = parent.getX() - picker.getWidth() - margin;
+        }
+        float y = parent.getY() + margin;
+        if (y + picker.getHeight() > trollHeight) {
+            y = trollHeight - picker.getHeight() - 1.0f;
+        }
+        if (x < 0.0f) x = 0.0f;
+        if (x + picker.getWidth() > trollWidth) x = trollWidth - picker.getWidth() - 1.0f;
+        if (y < 0.0f) y = 0.0f;
+        picker.setX(x);
+        picker.setY(y);
         activeColorPicker = picker;
         windowOrder.add(picker);
         bringToFront(picker);

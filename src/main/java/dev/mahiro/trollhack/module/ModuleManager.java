@@ -1,8 +1,11 @@
 package dev.mahiro.trollhack.module;
 
 import dev.mahiro.trollhack.event.EventHandler;
+import dev.mahiro.trollhack.event.EventType;
+import dev.mahiro.trollhack.event.events.client.TickEvent;
 import dev.mahiro.trollhack.event.events.input.KeyActionEvent;
 import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
+import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
 import dev.mahiro.trollhack.setting.Setting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
@@ -142,5 +145,12 @@ public final class ModuleManager {
                 module.setEnabled(event.isPressed());
             }
         }
+    }
+
+    @EventHandler
+    private void onPreTick(TickEvent event) {
+        if (event.getType() != EventType.Pre) return;
+
+        GuiTheme.tick();
     }
 }
