@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "trollhack",
+  "version": "${version}",
+  "name": "TrollHack-Recode",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.mahiro.trollhack.TrollHack"
+    ]
+  },
+  "mixins": [
+    "trollhack.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
