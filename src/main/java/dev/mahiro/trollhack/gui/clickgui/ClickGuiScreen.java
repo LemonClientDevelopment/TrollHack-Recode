@@ -52,6 +52,7 @@ public final class ClickGuiScreen extends Screen {
     private long transitionStartMs;
     private float transitionFrom;
     private float transitionTo;
+    private float transitionCurrent;
 
     public ClickGuiScreen() {
         super(Text.literal("TrollHack ClickGUI"));
@@ -101,17 +102,19 @@ public final class ClickGuiScreen extends Screen {
     private void beginTransition(boolean closing) {
         this.closing = closing;
         this.transitionStartMs = System.currentTimeMillis();
-        this.transitionFrom = closing ? 1.0f : 0.0f;
+        this.transitionFrom = transitionCurrent;
         this.transitionTo = closing ? 0.0f : 1.0f;
     }
 
     private float getTransitionMultiplier() {
-        float durationMs = 400.0f;
+        float durationMs = (closing ? GuiTheme.FADE_OUT_TIME_SEC : GuiTheme.FADE_IN_TIME_SEC) * 1000.0f;
+        if (durationMs <= 0.0f) return transitionTo;
+
         float t = (System.currentTimeMillis() - transitionStartMs) / durationMs;
         if (t >= 1.0f) return transitionTo;
         if (t <= 0.0f) return transitionFrom;
 
-        float eased = 1.0f - (float) Math.pow(1.0f - t, 3.0);
+        float eased = Easing.OUT_CUBIC.apply(Easing.clamp01(t));
         return transitionFrom + (transitionTo - transitionFrom) * eased;
     }
 
@@ -119,6 +122,7 @@ public final class ClickGuiScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         MinecraftClient client = MinecraftClient.getInstance();
         float multiplier = getTransitionMultiplier();
+        transitionCurrent = multiplier;
 
         float actualMouseX = mouseX * (getActualWidth() / (float) width);
         float actualMouseY = mouseY * (getActualHeight() / (float) height);
@@ -140,12 +144,7 @@ public final class ClickGuiScreen extends Screen {
             activeColorPicker = null;
         }
 
-        if (GuiTheme.BACKGROUND_BLUR > 0.0f) {
-            try {
-                context.applyBlur();
-            } catch (Throwable ignored) {
-            }
-        }
+        // 操你妈AI我急了
 
         NanoVGRenderer.INSTANCE.draw(vg -> {
             float trollWidth = getTrollWidth();
@@ -397,7 +396,13 @@ public final class ClickGuiScreen extends Screen {
     }
 
     public void openModuleSettings(Module module, float mouseX, float mouseY) {
-        moduleSettingWindows.removeIf(w -> w.getModule() == module);
+        for (int i = windowOrder.size() - 1; i >= 0; i--) {
+            Object w = windowOrder.get(i);
+            if (w instanceof ModuleSettingWindow settingWindow && settingWindow.getModule() == module) {
+                windowOrder.remove(i);
+                moduleSettingWindows.remove(settingWindow);
+            }
+        }
         ModuleSettingWindow window = new ModuleSettingWindow(this, module);
 
         float trollWidth = width / GuiTheme.SCALE_FACTOR;

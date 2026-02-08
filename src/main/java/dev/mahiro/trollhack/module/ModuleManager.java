@@ -1,11 +1,11 @@
 package dev.mahiro.trollhack.module;
 
 import dev.mahiro.trollhack.event.EventHandler;
-import dev.mahiro.trollhack.event.events.input.KeyPressEvent;
+import dev.mahiro.trollhack.event.events.input.KeyActionEvent;
 import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
 import dev.mahiro.trollhack.setting.Setting;
 import net.minecraft.client.MinecraftClient;
-import org.lwjgl.glfw.GLFW;
+import net.minecraft.client.util.InputUtil;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -110,14 +110,38 @@ public final class ModuleManager {
     }
 
     @EventHandler
-    private void onKeyPress(KeyPressEvent event) {
-        if (event.getKeyCode() != GLFW.GLFW_KEY_RIGHT_SHIFT) return;
-
+    private void onKeyAction(KeyActionEvent event) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen instanceof ClickGuiScreen) {
-            client.setScreen(null);
-        } else {
-            client.setScreen(new ClickGuiScreen());
+        if (client == null || client.getWindow() == null) return;
+        if (client.getOverlay() != null) return;
+        if (InputUtil.isKeyPressed(client.getWindow(), InputUtil.GLFW_KEY_F3)) return;
+
+        int keyCode = event.getKeyCode();
+        if (keyCode == InputUtil.UNKNOWN_KEY.getCode()) return;
+
+        if (keyCode == InputUtil.GLFW_KEY_RIGHT_SHIFT && event.isPressed()) {
+            if (client.currentScreen instanceof ClickGuiScreen) {
+                client.setScreen(null);
+            } else if (client.currentScreen == null) {
+                client.setScreen(new ClickGuiScreen());
+            }
+            return;
+        }
+
+        if (client.currentScreen != null) return;
+
+        for (Module module : modules) {
+            int bindKey = module.getBindKey();
+            if (bindKey == -1) continue;
+            if (bindKey != keyCode) continue;
+
+            if (module.getBindMode() == BindMode.TOGGLE) {
+                if (event.isPressed()) {
+                    module.toggle();
+                }
+            } else if (module.getBindMode() == BindMode.HOLD) {
+                module.setEnabled(event.isPressed());
+            }
         }
     }
 }

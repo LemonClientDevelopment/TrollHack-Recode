@@ -4,6 +4,8 @@
   "package": "dev.mahiro.trollhack.mixins",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "input.MixinKeyboard",
+    "input.MixinMouse",
     "render.MixinGameRenderer",
     "render.MixinScreen"
   ],
