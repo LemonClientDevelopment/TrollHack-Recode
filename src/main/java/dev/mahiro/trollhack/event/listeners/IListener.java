@@ -6,6 +6,7 @@ package dev.mahiro.trollhack.event.listeners;
 public interface IListener {
     /**
      * Calls the listener with the specified event.
+     *
      * @param event Event to pass in
      */
     void call(Object event);

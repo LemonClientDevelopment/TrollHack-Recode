@@ -1,11 +1,13 @@
 package dev.mahiro.trollhack;
 
+import dev.mahiro.trollhack.config.ConfigManager;
 import dev.mahiro.trollhack.event.EventBus;
 import dev.mahiro.trollhack.event.IEventBus;
 import dev.mahiro.trollhack.event.events.input.KeyPressEvent;
 import dev.mahiro.trollhack.module.ModuleManager;
 import dev.mahiro.trollhack.module.modules.client.ExampleModule;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
@@ -30,6 +32,9 @@ public class TrollHack implements ClientModInitializer {
         EVENT_BUS.subscribe(MODULE_MANAGER);
 
         ClientTickEvents.END_CLIENT_TICK.register(this::onEndClientTick);
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ConfigManager.saveFromRuntime());
+
+        ConfigManager.loadAndApply();
     }
 
     private void onEndClientTick(MinecraftClient client) {

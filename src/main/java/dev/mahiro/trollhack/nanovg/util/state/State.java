@@ -101,10 +101,10 @@ public final class State {
         glBindBuffer(GL_ARRAY_BUFFER, props.getLastArrayBuffer()[0]);
         glBlendEquationSeparate(props.getLastBlendEquationRgb()[0], props.getLastBlendEquationAlpha()[0]);
         glBlendFuncSeparate(
-            props.getLastBlendSrcRgb()[0],
-            props.getLastBlendDstRgb()[0],
-            props.getLastBlendSrcAlpha()[0],
-            props.getLastBlendDstAlpha()[0]
+                props.getLastBlendSrcRgb()[0],
+                props.getLastBlendDstRgb()[0],
+                props.getLastBlendSrcAlpha()[0],
+                props.getLastBlendDstAlpha()[0]
         );
         if (props.isLastEnableBlend()) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);

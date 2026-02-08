@@ -6,7 +6,7 @@ import org.lwjgl.nanovg.NVGPaint;
 import org.lwjgl.nanovg.NanoVGGL3;
 import org.lwjgl.system.MemoryStack;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;

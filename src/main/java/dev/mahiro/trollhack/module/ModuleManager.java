@@ -1,21 +1,14 @@
 package dev.mahiro.trollhack.module;
 
 import dev.mahiro.trollhack.event.EventHandler;
-import dev.mahiro.trollhack.event.IEventBus;
 import dev.mahiro.trollhack.event.events.input.KeyPressEvent;
 import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
+import dev.mahiro.trollhack.setting.Setting;
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.lang.reflect.Field;
+import java.util.*;
 
 public final class ModuleManager {
     private final List<Module> modules = new ArrayList<>();
@@ -50,6 +43,7 @@ public final class ModuleManager {
         modules.sort(Comparator.comparing(Module::getName, String.CASE_INSENSITIVE_ORDER));
 
         for (Module module : modules) {
+            collectSettings(module);
             if (module.isEnabledByDefault()) {
                 module.setEnabled(true);
             }
@@ -95,6 +89,24 @@ public final class ModuleManager {
 
     private static String normalize(String name) {
         return name.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static void collectSettings(Module module) {
+        Class<?> clazz = module.getClass();
+        while (clazz != null && clazz != Module.class) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if (!Setting.class.isAssignableFrom(field.getType())) continue;
+                try {
+                    field.setAccessible(true);
+                    Setting<?> setting = (Setting<?>) field.get(module);
+                    if (setting != null) {
+                        module.addSetting(setting);
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
     }
 
     @EventHandler

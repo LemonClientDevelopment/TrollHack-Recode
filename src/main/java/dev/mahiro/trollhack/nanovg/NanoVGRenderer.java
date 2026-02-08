@@ -98,10 +98,10 @@ public final class NanoVGRenderer {
 
         float scaleFactor = (float) client.getWindow().getScaleFactor();
         nvgBeginFrame(
-            vg,
-            client.getWindow().getFramebufferWidth() / scaleFactor,
-            client.getWindow().getFramebufferHeight() / scaleFactor,
-            scaleFactor
+                vg,
+                client.getWindow().getFramebufferWidth() / scaleFactor,
+                client.getWindow().getFramebufferHeight() / scaleFactor,
+                scaleFactor
         );
 
         drawingLogic.accept(vg);

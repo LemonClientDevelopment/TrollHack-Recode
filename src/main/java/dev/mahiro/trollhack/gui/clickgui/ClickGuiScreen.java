@@ -18,10 +18,10 @@ import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 
 import static org.lwjgl.nanovg.NanoVG.NVG_ALIGN_LEFT;
@@ -203,6 +203,14 @@ public final class ClickGuiScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         float x = (float) (mouseX / GuiTheme.SCALE_FACTOR);
         float y = (float) (mouseY / GuiTheme.SCALE_FACTOR);
+
+        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
+            ModuleSettingWindow window = moduleSettingWindows.get(i);
+            if (window.mouseScrolled(x, y, verticalAmount)) {
+                return true;
+            }
+        }
+
         ListWindow hovered = getHoveredWindow(x, y);
         if (hovered != null) {
             hovered.mouseScrolled(x, y, verticalAmount, searchString);
@@ -223,9 +231,9 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyInput input) {
-        for (ModuleSettingWindow window : moduleSettingWindows) {
-            if (window.isBindListening()) {
-                window.onKey(input.key());
+        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
+            ModuleSettingWindow window = moduleSettingWindows.get(i);
+            if (window.handlesKeyboardInput() && window.onKey(input.key())) {
                 return true;
             }
         }
@@ -245,6 +253,13 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public boolean charTyped(CharInput input) {
+        for (int i = moduleSettingWindows.size() - 1; i >= 0; i--) {
+            ModuleSettingWindow window = moduleSettingWindows.get(i);
+            if (window.handlesKeyboardInput() && window.onChar(input.codepoint())) {
+                return true;
+            }
+        }
+
         char chr = (char) input.codepoint();
         if (Character.isLetter(chr) || chr == ' ') {
             searchString += chr;

@@ -93,9 +93,9 @@ public class EventBus implements IEventBus {
 
     private void subscribe(IListener listener, boolean onlyStatic) {
         if (onlyStatic) {
-            if (listener.isStatic()) insert(listenerMap.computeIfAbsent(listener.getTarget(), aClass -> new CopyOnWriteArrayList<>()), listener);
-        }
-        else {
+            if (listener.isStatic())
+                insert(listenerMap.computeIfAbsent(listener.getTarget(), aClass -> new CopyOnWriteArrayList<>()), listener);
+        } else {
             insert(listenerMap.computeIfAbsent(listener.getTarget(), aClass -> new CopyOnWriteArrayList<>()), listener);
         }
     }
@@ -134,8 +134,7 @@ public class EventBus implements IEventBus {
         if (l != null) {
             if (staticOnly) {
                 if (listener.isStatic()) l.remove(listener);
-            }
-            else l.remove(listener);
+            } else l.remove(listener);
         }
     }
 

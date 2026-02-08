@@ -5,7 +5,7 @@ import dev.mahiro.trollhack.module.Module;
 import dev.mahiro.trollhack.nanovg.font.FontLoader;
 import dev.mahiro.trollhack.nanovg.util.NanoVGHelper;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.Locale;
 
 import static org.lwjgl.nanovg.NanoVG.NVG_ALIGN_LEFT;

@@ -17,7 +17,7 @@ public class ConsumerListener<T> implements IListener {
         this.priority = priority;
         this.executor = executor;
     }
-    
+
     public ConsumerListener(Class<T> target, Consumer<T> executor) {
         this(target, EventPriority.MEDIUM, executor);
     }

@@ -1,9 +1,12 @@
 package dev.mahiro.trollhack.module;
 
 import dev.mahiro.trollhack.TrollHack;
-import dev.mahiro.trollhack.event.IEventBus;
 import dev.mahiro.trollhack.event.events.ModuleToggleEvent;
+import dev.mahiro.trollhack.setting.Setting;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public abstract class Module {
@@ -17,6 +20,8 @@ public abstract class Module {
 
     private int bindKey = -1;
     private BindMode bindMode = BindMode.TOGGLE;
+
+    private final List<Setting<?>> settings = new ArrayList<>();
 
     protected Module(String name, String description, Category category, boolean enabledByDefault) {
         this.name = Objects.requireNonNull(name, "name");
@@ -69,6 +74,20 @@ public abstract class Module {
         this.bindMode = Objects.requireNonNull(bindMode, "bindMode");
     }
 
+    public final List<Setting<?>> getSettings() {
+        return Collections.unmodifiableList(settings);
+    }
+
+    public final void addSetting(Setting<?> setting) {
+        if (setting == null) return;
+        if (!settings.contains(setting)) settings.add(setting);
+    }
+
+    protected final <S extends Setting<?>> S setting(S setting) {
+        addSetting(setting);
+        return setting;
+    }
+
     public final void toggle() {
         setEnabled(!enabled);
     }
@@ -94,4 +113,3 @@ public abstract class Module {
     protected void onDisable() {
     }
 }
-

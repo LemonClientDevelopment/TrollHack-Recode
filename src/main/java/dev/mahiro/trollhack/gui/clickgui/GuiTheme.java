@@ -1,6 +1,6 @@
 package dev.mahiro.trollhack.gui.clickgui;
 
-import java.awt.Color;
+import java.awt.*;
 
 public final class GuiTheme {
     public static final float SCALE_FACTOR = 2.0f;
