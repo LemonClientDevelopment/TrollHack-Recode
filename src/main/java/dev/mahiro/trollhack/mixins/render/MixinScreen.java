@@ -11,12 +11,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Screen.class)
 public final class MixinScreen {
     @Inject(method = "renderWithTooltip", at = @At("HEAD"))
-    private void trollhack$beginNanoVgScreenBatch(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void onRenderWithTooltipHead(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         NanoVGRenderer.INSTANCE.beginBatch();
     }
 
     @Inject(method = "renderWithTooltip", at = @At("RETURN"))
-    private void trollhack$endNanoVgScreenBatch(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void onRenderWithTooltipReturn(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         NanoVGRenderer.INSTANCE.endBatch();
     }
 }

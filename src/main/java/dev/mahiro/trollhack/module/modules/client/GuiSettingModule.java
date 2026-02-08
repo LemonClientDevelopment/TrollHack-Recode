@@ -47,13 +47,12 @@ public final class GuiSettingModule extends Module {
     }
 
     public void applyToTheme() {
-        float scaleFactor = (scale.getValue() / 100.0f) * 2.0f;
-        if (scaleFactor <= 0.0f) scaleFactor = 2.0f;
-
-        GuiTheme.SCALE_FACTOR = scaleFactor;
+        GuiTheme.setScalePercent(scale.getValue());
+        GuiTheme.PARTICLE = particle.getValue();
         GuiTheme.BACKGROUND_BLUR = backgroundBlur.getValue();
         GuiTheme.WINDOW_OUTLINE = windowOutline.getValue();
         GuiTheme.TITLE_BAR = titleBar.getValue();
+        GuiTheme.WINDOW_BLUR_PASS = windowBlurPass.getValue();
         GuiTheme.WINDOW_X_MARGIN = xMargin.getValue();
         GuiTheme.WINDOW_Y_MARGIN = yMargin.getValue();
         GuiTheme.DARKNESS = darkness.getValue();
@@ -65,4 +64,3 @@ public final class GuiSettingModule extends Module {
         GuiTheme.HOVER_ALPHA = hoverAlpha.getValue();
     }
 }
-

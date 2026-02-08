@@ -238,6 +238,21 @@ public final class NanoVGHelper {
         nvgStroke(vg);
     }
 
+    public static int createImageFromTexture(int textureId, int width, int height, int flags) {
+        long vg = getContext();
+        return NanoVGGL3.nvglCreateImageFromHandle(vg, textureId, width, height, flags);
+    }
+
+    public static void drawImage(int imageId, float x, float y, float w, float h, float alpha) {
+        long vg = getContext();
+        NVGPaint paint = NVGPaint.create();
+        nvgBeginPath(vg);
+        nvgRect(vg, x, y, w, h);
+        nvgImagePattern(vg, x, y, w, h, 0.0f, imageId, alpha, paint);
+        nvgFillPaint(vg, paint);
+        nvgFill(vg);
+    }
+
     public static void drawGradientRRect(float x, float y, float w, float h, float radius, Color startColor, Color endColor) {
         long vg = getContext();
         NVGPaint paint = NVGPaint.create();

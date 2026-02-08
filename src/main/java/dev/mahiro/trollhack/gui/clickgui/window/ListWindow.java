@@ -2,6 +2,8 @@ package dev.mahiro.trollhack.gui.clickgui.window;
 
 import dev.mahiro.trollhack.gui.clickgui.ClickGuiScreen;
 import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
+import dev.mahiro.trollhack.gui.clickgui.anim.AnimatedFloat;
+import dev.mahiro.trollhack.gui.clickgui.anim.Easing;
 import dev.mahiro.trollhack.gui.clickgui.component.ModuleButtonComponent;
 import dev.mahiro.trollhack.module.Category;
 import dev.mahiro.trollhack.nanovg.font.FontLoader;
@@ -25,6 +27,7 @@ public final class ListWindow {
     private float height;
 
     private boolean minimized;
+    private final AnimatedFloat minimizeProgress = new AnimatedFloat(Easing.OUT_QUART, 300.0f, 1.0f);
 
     private boolean dragging;
     private boolean resizing;
@@ -46,6 +49,9 @@ public final class ListWindow {
     private long lastScrollBounceMs = System.currentTimeMillis();
     private float scrollSpeed;
     private float scrollProgress;
+
+    private ModuleButtonComponent activeChild;
+    private int activeChildButton = -1;
 
     public ListWindow(ClickGuiScreen screen, Category category, String title, List<ModuleButtonComponent> children) {
         this.screen = screen;
@@ -87,7 +93,7 @@ public final class ListWindow {
     }
 
     public boolean contains(float mouseX, float mouseY) {
-        float h = minimized ? draggableHeight() : height;
+        float h = getRenderHeight();
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + h;
     }
 
@@ -95,12 +101,19 @@ public final class ListWindow {
         return NanoVGHelper.getFontHeight(FontLoader.bold(), 11.0f) + 6.0f;
     }
 
+    private float getRenderHeight() {
+        float dragHeight = draggableHeight();
+        float p = minimizeProgress.get();
+        return (height - dragHeight) * p + dragHeight;
+    }
+
     public void render(float mouseX, float mouseY, String searchString) {
         float dragHeight = draggableHeight();
         updateScrollProgress();
-        float renderHeight = minimized ? dragHeight : height;
+        float renderHeight = getRenderHeight();
 
         NanoVGHelper.drawShadow(x, y, width, renderHeight, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
+        screen.drawWindowBlur(x, y, width, renderHeight, GuiTheme.WINDOW_BLUR_PASS > 0 ? 1.0f : 0.0f);
         NanoVGHelper.drawRect(x, y, width, renderHeight, GuiTheme.BACKGROUND);
         if (GuiTheme.WINDOW_OUTLINE) {
             Color outline = new Color(GuiTheme.PRIMARY.getRed(), GuiTheme.PRIMARY.getGreen(), GuiTheme.PRIMARY.getBlue(), 255);
@@ -112,7 +125,7 @@ public final class ListWindow {
         }
         NanoVGHelper.drawString(title, x + 3.0f, y + 3.5f, FontLoader.bold(), 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
 
-        if (minimized) return;
+        if (minimizeProgress.get() <= 0.0f) return;
 
         float childY = (height == dragHeight ? 0.0f : dragHeight) + GuiTheme.WINDOW_Y_MARGIN;
         float childX = GuiTheme.WINDOW_X_MARGIN;
@@ -126,14 +139,14 @@ public final class ListWindow {
         }
 
         NanoVGHelper.save();
-        NanoVGHelper.scissor(x + childX, y + dragHeight, width - childX * 2.0f, height - dragHeight);
+        NanoVGHelper.scissor(x + childX, y + dragHeight, width - childX * 2.0f, renderHeight - dragHeight);
         NanoVGHelper.translate(0.0f, -scrollProgress);
 
         for (ModuleButtonComponent child : children) {
             if (!child.isVisible()) continue;
             float ry = (child.getY() - y) - scrollProgress;
             if (ry + child.getHeight() < dragHeight) continue;
-            if (ry > height) continue;
+            if (ry > renderHeight) continue;
             child.render(mouseX, mouseY + scrollProgress);
         }
 
@@ -157,6 +170,8 @@ public final class ListWindow {
         preClickX = mouseX;
         preClickY = mouseY;
         preButton = button;
+        activeChild = null;
+        activeChildButton = -1;
 
         float localX = mouseX - x;
         float localY = mouseY - y;
@@ -204,11 +219,9 @@ public final class ListWindow {
         for (ModuleButtonComponent child : children) {
             if (!child.isVisible()) continue;
             if (child.contains(mouseX, mouseY + scrollProgress)) {
-                if (button == 1) {
-                    screen.openModuleSettings(child.getModule(), mouseX, mouseY);
-                } else {
-                    child.mouseClicked(mouseX, mouseY + scrollProgress, button);
-                }
+                child.mousePressed(mouseX, mouseY + scrollProgress, button);
+                activeChild = child;
+                activeChildButton = button;
                 return;
             }
         }
@@ -218,8 +231,20 @@ public final class ListWindow {
         if (button == 0) dragging = false;
         if (button == 0) resizing = false;
 
-        if (!wasDrag && button == 1 && preClickY - preDragY < draggableHeight()) {
+        if (activeChild != null && button == activeChildButton) {
+            ModuleButtonComponent child = activeChild;
+            child.mouseReleased(mouseX, mouseY + scrollProgress, button, wasDrag);
+            if (!wasDrag && button == 1 && child.contains(mouseX, mouseY + scrollProgress)) {
+                screen.openModuleSettings(child.getModule(), mouseX, mouseY);
+            }
+            activeChild = null;
+            activeChildButton = -1;
+            return;
+        }
+
+        if (!wasDrag && button == 1 && preClickY - preDragY < draggableHeight() && System.currentTimeMillis() - minimizeProgress.getTime() > 300L) {
             minimized = !minimized;
+            minimizeProgress.update(minimized ? 0.0f : 1.0f);
         }
 
         if (!wasDrag) {

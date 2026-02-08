@@ -183,6 +183,7 @@ public final class ModuleSettingWindow {
         height = Math.min(contentHeight, screen.getTrollHeight() - 2.0f);
 
         NanoVGHelper.drawShadow(x, y, width, height, 0.0f, new Color(0, 0, 0, 120), 10.0f, 0.0f, 0.0f);
+        screen.drawWindowBlur(x, y, width, height, GuiTheme.WINDOW_BLUR_PASS > 0 ? 1.0f : 0.0f);
         NanoVGHelper.drawRect(x, y, width, height, GuiTheme.BACKGROUND);
         if (GuiTheme.WINDOW_OUTLINE) {
             Color outline = new Color(GuiTheme.PRIMARY.getRed(), GuiTheme.PRIMARY.getGreen(), GuiTheme.PRIMARY.getBlue(), 255);
@@ -206,8 +207,14 @@ public final class ModuleSettingWindow {
         NanoVGHelper.save();
         NanoVGHelper.scissor(scissorX, scissorY, scissorW, scissorH);
 
+        if (module.isEnabled()) {
+            NanoVGHelper.drawRect(rowX, rowY, rowW, rowH, GuiTheme.PRIMARY);
+        }
         drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, "Enabled", module.isEnabled() ? "On" : "Off", false);
         rowY += rowH + rowGap;
+        if (module.isVisible()) {
+            NanoVGHelper.drawRect(rowX, rowY, rowW, rowH, GuiTheme.PRIMARY);
+        }
         drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, "Visible", module.isVisible() ? "On" : "Off", false);
         rowY += rowH + rowGap;
         drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, "Bind", bindListening ? "..." : keyName(module.getBindKey()), false);
@@ -227,6 +234,9 @@ public final class ModuleSettingWindow {
     private float renderSetting(Setting<?> setting, float mouseX, float mouseY, float rowX, float rowY, float rowW, float rowH, float rowGap) {
         if (setting instanceof BoolSetting boolSetting) {
             String value = boolSetting.get() ? "On" : "Off";
+            if (boolSetting.get()) {
+                NanoVGHelper.drawRect(rowX, rowY, rowW, rowH, GuiTheme.PRIMARY);
+            }
             boolean hovered = drawRow(mouseX, mouseY, rowX, rowY, rowW, rowH, setting.getName(), value, editingSetting == setting);
             if (hovered && editingSetting == setting) {
                 drawEditingOverlay(rowX, rowY, rowW, rowH);
@@ -293,7 +303,7 @@ public final class ModuleSettingWindow {
     private boolean drawRow(float mouseX, float mouseY, float x, float y, float w, float h, String label, String value, boolean focused) {
         boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
         if (hovered) {
-            NanoVGHelper.drawRect(x, y, w, h, new Color(255, 255, 255, GuiTheme.HOVER_ALPHA));
+            NanoVGHelper.drawRect(x, y, w, h, GuiTheme.getHoverOverlay());
         }
         int font = FontLoader.regular();
         NanoVGHelper.drawString(label, x + 2.0f, y + 1.0f, font, 11.0f, NVG_ALIGN_LEFT | NVG_ALIGN_TOP, GuiTheme.TEXT);
