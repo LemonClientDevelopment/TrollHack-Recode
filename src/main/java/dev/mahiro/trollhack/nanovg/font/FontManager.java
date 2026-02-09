@@ -75,7 +75,7 @@ public final class FontManager {
     }
 
     private static InputStream openFontStream(String fontName) {
-        String path = "/assets/trollhack/fonts/" + fontName;
+        String path = "/assets/sakura/fonts/" + fontName;
         InputStream is = FontManager.class.getResourceAsStream(path);
         if (is != null) return is;
 
