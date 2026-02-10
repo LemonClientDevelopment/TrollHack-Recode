@@ -1,8 +1,11 @@
 package dev.mahiro.trollhack.mixins.render;
 
+import dev.mahiro.trollhack.TrollHack;
+import dev.mahiro.trollhack.event.events.render.RenderWorldEvent;
 import dev.mahiro.trollhack.nanovg.NanoVGRenderer;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,5 +17,10 @@ public final class MixinGameRenderer {
     private void trollhack$renderScreenNanoVgOnTop(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
         NanoVGRenderer.INSTANCE.flushScreenQueue();
     }
+    
+    @Inject(method = "renderWorld", at = @At("RETURN"))
+    private void onRenderWorld(RenderTickCounter tickCounter, CallbackInfo ci) {
+        MatrixStack matrices = new MatrixStack();
+        TrollHack.EVENT_BUS.post(new RenderWorldEvent(matrices, 1.0f));
+    }
 }
-

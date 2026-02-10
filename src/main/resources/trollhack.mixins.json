@@ -5,10 +5,13 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "client.MixinMinecraftClient",
+    "entity.MixinLivingEntity",
     "input.MixinKeyboard",
     "input.MixinMouse",
+    "network.MixinClientConnection",
     "render.MixinGameRenderer",
-    "render.MixinScreen"
+    "render.MixinScreen",
+    "render.MixinWorldRenderer"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,2 +1,6 @@
 accessWidener v2 named
 
+accessible field net/minecraft/entity/player/PlayerInventory selectedSlot I
+accessible field net/minecraft/entity/LivingEntity limbAnimator Lnet/minecraft/entity/LimbAnimator;
+accessible field net/minecraft/entity/LivingEntity bodyYaw F
+accessible field net/minecraft/entity/LivingEntity headYaw F
