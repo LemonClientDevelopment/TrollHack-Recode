@@ -10,6 +10,8 @@ import dev.mahiro.trollhack.gui.clickgui.GuiTheme;
 import dev.mahiro.trollhack.module.modules.client.ClickGui;
 import dev.mahiro.trollhack.module.modules.client.ExampleModule;
 import dev.mahiro.trollhack.module.modules.client.GuiSetting;
+import dev.mahiro.trollhack.module.modules.combat.AutoCrystal;
+import dev.mahiro.trollhack.module.modules.misc.FakePlayer;
 import dev.mahiro.trollhack.module.modules.movement.AutoSprint;
 import dev.mahiro.trollhack.setting.Setting;
 import net.minecraft.client.MinecraftClient;
@@ -32,8 +34,14 @@ public final class ModuleManager {
         register(new ExampleModule());
         register(new GuiSetting());
 
+        // Combat
+        register(new AutoCrystal());
+
         // Movement
         register(new AutoSprint());
+
+        // Misc
+        register(new FakePlayer());
 
         load();
     }
